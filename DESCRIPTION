@@ -1,0 +1,13 @@
+Package: rcliaddons
+Title: Addons for the R Command-Line Interface
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Henrik", family = "Bengtsson",
+           role = c("aut", "cre", "cph"),
+           email = "henrikb@braju.com")
+Description: By calling the API of this package during the R startup, in an Rprofile file, one can add extra features to the R command-line interface (CLI).  For example, rcliaddons::r_cmd_call() will add CLI option '--flavor=<name>' to 'R CMD build' and 'R CMD check'.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.0
