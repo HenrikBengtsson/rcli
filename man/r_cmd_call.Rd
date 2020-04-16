@@ -5,7 +5,7 @@
 \title{\emph{(EXPERIMENTAL)} Performs a tweaked 'R CMD' call}
 \usage{
 r_cmd_call(
-  extras = c("flavor"),
+  extras = c("renviron"),
   args = commandArgs(trailingOnly = TRUE),
   unload = TRUE,
   debug = NA,
@@ -43,13 +43,13 @@ For example, append:\if{html}{\out{<div class="r">}}\preformatted{if (requireNam
 to your \file{~/.Rprofile} file.
 }
 
-\section{The \code{flavor} feature}{
+\section{The \code{renviron} feature}{
 
-When \code{extras} include \code{"flavor"}, this function will add support for the
-\verb{--flavor=<name>} command-line option to \verb{R CMD build} and \verb{R CMD check}.
-When specified, \verb{R CMD build --flavor=<name>} will run with
+When \code{extras} include \code{"renviron"}, this function will add support for the
+\verb{--renviron=<name>} command-line option to \verb{R CMD build} and \verb{R CMD check}.
+When specified, \verb{R CMD build --renviron=<name>} will run with
 \code{R_BUILD_ENVIRON} set to \file{~/.R/<name>-build.Renviron}.
-Similarly, \verb{R CMD check --flavor=<name>} will run with
+Similarly, \verb{R CMD check --renviron=<name>} will run with
 \code{R_CHECK_ENVIRON} set to \file{~/.R/<name>-check.Renviron}.
 }
 

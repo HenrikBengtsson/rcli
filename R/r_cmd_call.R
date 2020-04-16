@@ -25,17 +25,17 @@
 #' ```
 #' to your \file{~/.Rprofile} file.
 #'
-#' @section The `flavor` feature:
-#' When `extras` include `"flavor"`, this function will add support for the
-#' `--flavor=<name>` command-line option to `R CMD build` and `R CMD check`.
-#' When specified, `R CMD build --flavor=<name>` will run with
+#' @section The `renviron` feature:
+#' When `extras` include `"renviron"`, this function will add support for the
+#' `--renviron=<name>` command-line option to `R CMD build` and `R CMD check`.
+#' When specified, `R CMD build --renviron=<name>` will run with
 #' `R_BUILD_ENVIRON` set to \file{~/.R/<name>-build.Renviron}.
-#' Similarly, `R CMD check --flavor=<name>` will run with
+#' Similarly, `R CMD check --renviron=<name>` will run with
 #' `R_CHECK_ENVIRON` set to \file{~/.R/<name>-check.Renviron}.
 #'
 #' @keywords internal
 #' @export
-r_cmd_call <- function(extras = c("flavor"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame()) {
+r_cmd_call <- function(extras = c("renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame()) {
   R_CMD <- Sys.getenv("R_CMD")
 
   ## Nothing to do?
@@ -58,13 +58,13 @@ r_cmd_call <- function(extras = c("flavor"), args = commandArgs(trailingOnly=TRU
   ## Check for custom R CMD <command> options
   custom <- FALSE
   
-  flavor <- NULL
-  if ("flavor" %in% extras) {
-    pattern <- "^--flavor=(.*)$"
+  renviron <- NULL
+  if ("renviron" %in% extras) {
+    pattern <- "^--renviron=(.*)$"
     pos <- grep(pattern, args)
     if (length(pos) > 0L) {
-      flavor <- gsub(pattern, "\\1", args[pos])
-      flavor <- flavor[length(flavor)]
+      renviron <- gsub(pattern, "\\1", args[pos])
+      renviron <- renviron[length(renviron)]
       args <- args[-pos]
       custom <- TRUE
     }
@@ -93,8 +93,8 @@ r_cmd_call <- function(extras = c("flavor"), args = commandArgs(trailingOnly=TRU
     command <- "<unknown>"
   }
   
-  ## Use a custom build/check flavor?
-  if (!is.null(flavor)) {
+  ## Use a custom build/check renviron?
+  if (!is.null(renviron)) {
     stopifnot(!is.null(command))
     if (command %in% c("build", "check")) {
       env <- sprintf("R_%s_ENVIRON", toupper(command))
@@ -103,11 +103,11 @@ r_cmd_call <- function(extras = c("flavor"), args = commandArgs(trailingOnly=TRU
       ## Infer where the Renviron file for this <command> should be
       pathname <- do.call(Sys.getenv, args = list(env, unset = default))
       path <- dirname(pathname)
-      filename <- sprintf("%s-%s.Renviron", flavor, command)
+      filename <- sprintf("%s-%s.Renviron", renviron, command)
       pathname <- file.path(path, filename)
       if (!is_file(pathname)) {
-        stop(sprintf("No such %s.Renviron file for R CMD check --flavor=%s: %s",
-                     command, flavor, sQuote(pathname)), call. = FALSE)
+        stop(sprintf("No such %s.Renviron file for R CMD check --renviron=%s: %s",
+                     command, renviron, sQuote(pathname)), call. = FALSE)
       }
       args0 <- list(pathname)
       names(args0) <- env
@@ -122,8 +122,8 @@ r_cmd_call <- function(extras = c("flavor"), args = commandArgs(trailingOnly=TRU
         stdin[1] <- "tools:::.check_packages(args)"
       }
     } else {
-      stop(sprintf("Unknown R CMD %s option: --flavor=%s",
-                   command, sQuote(flavor)))
+      stop(sprintf("Unknown R CMD %s option: --renviron=%s",
+                   command, sQuote(renviron)))
     }
   }
   
@@ -137,9 +137,9 @@ r_cmd_call <- function(extras = c("flavor"), args = commandArgs(trailingOnly=TRU
     assign("args", args, envir = envir, inherits = FALSE)
     on.exit(rm(list = "args", envir = envir, inherits = FALSE))
     
-    if (!is.null(flavor)) {
-      cat(sprintf("* using %s=%s (from --flavor=%s)\n",
-                  env, sQuote(pathname), flavor))
+    if (!is.null(renviron)) {
+      cat(sprintf("* using %s=%s (from --renviron=%s)\n",
+                  env, sQuote(pathname), renviron))
     }
     eval(expr, envir = envir)
   }
