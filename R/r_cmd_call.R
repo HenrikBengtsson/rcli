@@ -35,8 +35,6 @@
 #'
 #' @keywords internal
 #'
-#' @importFrom utils file_test
-#' @importFrom R.utils commandArgs
 #' @export
 r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame()) {
   R_CMD <- Sys.getenv("R_CMD")
@@ -46,7 +44,7 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
     if (unload) unload()
     return()
   }
-  
+
   extras <- match.arg(extras, several.ok = TRUE)
   debug(debug)
   debug <- debug()
@@ -115,28 +113,6 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
     return()
   }
 
-  error <- function(fmtstr, ...) {
-    msg <- sprintf(fmtstr, ...)
-    msg <- sprintf("ERROR: %s", msg)
-    message(msg)
-    stop(msg)
-  }
-  
-  ## A good-enough approach to identify the tarball to be checked
-  cmd_args_tarball <- function(args) {
-    pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
-    tarball <- grep(pattern, args, value = TRUE)
-    if (length(tarball) == 0L) {
-      error("Did you forget to specify a tarball to be checked?")
-    }
-    tarball <- tarball[length(tarball)]
-    logf(" - tarball: %s", sQuote(tarball))
-    if (!file_test("-f", tarball)) {
-      error("No such file: ", sQuote(tarball))
-    }
-    tarball
-  }
-
   command <- NULL
   stdin <- NULL
   prologue <- list()
@@ -163,28 +139,9 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
   ## Use a custom check flavor?
   if (!is.null(flavor)) {
     if (command == "check") {
-      if (flavor == "BiocCheck") {
-        ## Assert that the 'BiocCheck' package is installed
-        pkg <- "BiocCheck"
-        res <- requireNamespace(pkg, quietly = TRUE)
-        if (!res) error("Failed to load the '%s' package", pkg)
-        ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
-        args <- commandArgs(asValues = TRUE, .args = c("", args))
-        if (isTRUE(args$help)) {
-          code <- "BiocCheck::usage()"
-          expr <- parse(text = code)
-          eval(expr, envir = envir)
-          quit(save = "no", status = 0L)
-        }
-        tarball <- cmd_args_tarball(args)
-        args <- c(list(tarball), args)
-        code <- "do.call(BiocCheck::BiocCheck, args=args)"
-        ## Assert that code is valid
-        parse(text = code)
-        stdin[1] <- code
-      } else {
-        error("Unknown R CMD %s flavor: --flavor=%s", command, sQuote(flavor))
-      }
+      res <- parse_check_flavor(flavor, args = args, stdin = stdin)
+      args <- res$args
+      stdin <- res$stdin
     } else {
       error("Unknown R CMD %s option: --flavor=%s", command, sQuote(flavor))
     }
@@ -227,7 +184,7 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
     expr <- parse(text = stdin)
     logf(" - args: %s", paste(sQuote(args), collapse = ", "))
     assign("args", args, envir = envir, inherits = FALSE)
-    on.exit(rm(list = "args", envir = envir, inherits = FALSE))
+    on.exit(rm(list = "args", envir = envir, inherits = FALSE), add = TRUE)
     
     if (!is.null(renviron)) {
       cat(sprintf("* using %s=%s (from --renviron=%s)\n",
@@ -258,4 +215,62 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
   }
 
   if (unload) unload(debug = debug)
+}
+
+
+error <- function(fmtstr, ...) {
+  msg <- sprintf(fmtstr, ...)
+  msg <- sprintf("ERROR: %s", msg)
+  message(msg)
+  stop(msg)
+}
+
+## A good-enough approach to identify the tarball to be checked
+#' @importFrom utils file_test
+cmd_args_tarball <- function(args) {
+  pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
+  tarball <- grep(pattern, args, value = TRUE)
+  if (length(tarball) == 0L) {
+    error("Did you forget to specify a tarball to be checked?")
+  }
+  tarball <- tarball[length(tarball)]
+  logf(" - tarball: %s", sQuote(tarball))
+  if (!file_test("-f", tarball)) {
+    error("No such file: ", sQuote(tarball))
+  }
+  tarball
+}
+
+
+parse_check_flavor <- function(flavor, ...) {
+  if (flavor == "BiocCheck") {
+    res <- parse_check_BiocCheck(...)
+  } else {
+    error("Unknown R CMD %s flavor: --flavor=%s", command, sQuote(flavor))
+  }
+}
+
+#' @importFrom R.utils commandArgs
+parse_check_BiocCheck <- function(args, stdin) {
+  ## Assert that the 'BiocCheck' package is installed
+  pkg <- "BiocCheck"
+  res <- requireNamespace(pkg, quietly = TRUE)
+  if (!res) error("Failed to load the '%s' package", pkg)
+  
+  ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
+  pargs <- commandArgs(asValues = TRUE, .args = c("", args))
+  
+  if (isTRUE(pargs$help)) {
+    args <- list()
+    code <- c("BiocCheck::usage()", "quit(save = 'no', status = 0L)")
+  } else {
+    tarball <- cmd_args_tarball(args)
+    args <- c(list(tarball), pargs)
+    code <- "do.call(BiocCheck::BiocCheck, args=args)"
+  }
+  stdin <- code
+
+  res <- list(args = args, stdin = stdin)
+
+  res
 }
