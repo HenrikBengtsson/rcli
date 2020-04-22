@@ -292,10 +292,24 @@ check_flavors <- local({
   }
 })
 
+import_check_flavors <- function(flavors) {
+  ## Load packages named '<flavor>' and 'rcli.addons.<flavor>'
+  ## if the exists. They will register the rcli addons when loaded.
+  for (flavor in flavors) {
+    pkg <- flavor
+    if (requireNamespace(pkg, quietly = TRUE)) next
+    pkg <- sprintf("rcli.addons.%s", flavor)
+    if (requireNamespace(pkg, quietly = TRUE)) next
+  }
+  
+  check_flavors()
+}
+
 
 #' @importFrom R.utils commandArgs
 parse_check_flavor <- function(flavor, args = list(), ...) {
-  db <- check_flavors()
+  db <- import_check_flavors(flavor)
+  
   fcn <- db[[flavor]]
   if (is.null(fcn)) {
     error("Unknown R CMD %s flavor: --flavor=%s", "check", sQuote(flavor))
