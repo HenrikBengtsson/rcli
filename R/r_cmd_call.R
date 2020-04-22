@@ -293,11 +293,17 @@ check_flavors <- local({
 })
 
 
-parse_check_flavor <- function(flavor, ...) {
+#' @importFrom R.utils commandArgs
+parse_check_flavor <- function(flavor, args = list(), ...) {
   db <- check_flavors()
   fcn <- db[[flavor]]
   if (is.null(fcn)) {
     error("Unknown R CMD %s flavor: --flavor=%s", "check", sQuote(flavor))
   }
-  fcn(...)
+
+  ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
+  parsed_args <- commandArgs(asValues = TRUE, .args = c("", args))
+  attr(parsed_args, "command_line_arguments") <- args
+  
+  fcn(args = parsed_args, ...)
 }

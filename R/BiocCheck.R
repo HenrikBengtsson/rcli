@@ -1,12 +1,9 @@
-#' @importFrom R.utils commandArgs
 parse_check_BiocCheck <- function(args, stdin) {
   ## Assert that the 'BiocCheck' package is installed
   pkg <- "BiocCheck"
   res <- requireNamespace(pkg, quietly = TRUE)
   if (!res) error("Failed to load the '%s' package", pkg)
-  
-  ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
-  args <- commandArgs(asValues = TRUE, .args = c("", args))
+
   if (isTRUE(args$help)) {
     args <- list()
     code <- c("BiocCheck::usage()", "quit(save = 'no', status = 0L)")
