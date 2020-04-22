@@ -1,4 +1,4 @@
-# Package: rcliaddons
+# Package: rcli
 
 ## Version: 0.0.0-9000 [2019-04-21]
 
