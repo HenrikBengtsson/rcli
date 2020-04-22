@@ -146,10 +146,13 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
   stdin <- stdin[nzchar(stdin)]
   if (stdin[1] == "tools:::.build_packages()") {
     command <- "build"
+    stdin[1] <- "tools:::.build_packages(args)"
   } else if (stdin[1] == "tools:::.check_packages()") {
     command <- "check"
+    stdin[1] <- "tools:::.check_packages(args)"
   } else if (stdin[1] == "tools:::.install_packages()") {
     command <- "INSTALL"
+    stdin[1] <- "tools:::.install_packages(args)"
   } else {
     command <- "<unknown>"
   }
@@ -168,11 +171,10 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
         code <- sprintf("BiocCheck::BiocCheck(%s)", dQuote(tarball))
         ## Assert that code is valid
         parse(text = code)
-        epilogue[[flavor]] <- code
+        stdin[1] <- code
       } else {
         error("Unknown R CMD %s flavor: --flavor=%s", command, sQuote(flavor))
       }
-      stdin[1] <- "tools:::.check_packages(args)"
     } else {
       error("Unknown R CMD %s option: --flavor=%s", command, sQuote(flavor))
     }
@@ -201,12 +203,6 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
 
       pathname <- do.call(Sys.getenv, args = list(env))
       stopifnot(nzchar(pathname))
-
-      if (command == "build") {
-        stdin[1] <- "tools:::.build_packages(args)"
-      } else if (command == "check") {
-        stdin[1] <- "tools:::.check_packages(args)"
-      }
     } else {
       error("Unknown R CMD %s option: --renviron=%s", command, sQuote(renviron))
     }
@@ -223,15 +219,15 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
     assign("args", args, envir = envir, inherits = FALSE)
     on.exit(rm(list = "args", envir = envir, inherits = FALSE))
     
-    if (!is.null(flavor)) {
-      cat(sprintf("* using epilogue (from --flavor=%s)\n", flavor))
-    }
-    
     if (!is.null(renviron)) {
       cat(sprintf("* using %s=%s (from --renviron=%s)\n",
                   env, sQuote(pathname), renviron))
     }
 
+#    if (!is.null(flavor)) {
+#      cat(sprintf("* using --flavor=%s\n", flavor))
+#    }
+    
     local({
       opwd <- getwd()
       logf("Working directory: %s", sQuote(opwd))

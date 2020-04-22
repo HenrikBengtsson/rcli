@@ -12,5 +12,5 @@
  * Add support for `R CMD check --renviron=<name>`, which sets
    `R_CHECK_ENVIRON=~/.R/<name>.check.Renviron`.
 
- * Add support for `R CMD check --flavor=bioc <tarball>`, which runs epilogue
-   checks via `BiocCheck::BiocCheck(tarball)`.
+ * Add support for `R CMD check --flavor=bioc <tarball>`, which runs
+   `BiocCheck::BiocCheck(tarball)`.
