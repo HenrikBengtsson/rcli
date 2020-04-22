@@ -12,5 +12,7 @@
  * Add support for `R CMD check --renviron=<name>`, which sets
    `R_CHECK_ENVIRON=~/.R/<name>.check.Renviron`.
 
- * Add support for `R CMD check --flavor=bioc <tarball>`, which runs
-   `BiocCheck::BiocCheck(tarball)`.
+ * Add support for `R CMD check --flavor=BiocCheck <options> <tarball>`, which
+   runs `BiocCheck::BiocCheck(<tarball>, <options>)`, e.g.
+   `R CMD check --flavor=BiocCheck --help` and
+   `R CMD check --flavor=BiocCheck --no-check-vignettes pkg_1.0.tar.gz`.

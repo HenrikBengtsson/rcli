@@ -36,6 +36,7 @@
 #' @keywords internal
 #'
 #' @importFrom utils file_test
+#' @importFrom R.utils commandArgs
 #' @export
 r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame()) {
   R_CMD <- Sys.getenv("R_CMD")
@@ -162,13 +163,22 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
   ## Use a custom check flavor?
   if (!is.null(flavor)) {
     if (command == "check") {
-      if (flavor == "bioc") {
-        tarball <- cmd_args_tarball(args)
+      if (flavor == "BiocCheck") {
         ## Assert that the 'BiocCheck' package is installed
         pkg <- "BiocCheck"
         res <- requireNamespace(pkg, quietly = TRUE)
         if (!res) error("Failed to load the '%s' package", pkg)
-        code <- sprintf("BiocCheck::BiocCheck(%s)", dQuote(tarball))
+        ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
+        args <- commandArgs(asValues = TRUE, .args = c("", args))
+        if (isTRUE(args$help)) {
+          code <- "BiocCheck::usage()"
+          expr <- parse(text = code)
+          eval(expr, envir = envir)
+          quit(save = "no", status = 0L)
+        }
+        tarball <- cmd_args_tarball(args)
+        args <- c(list(tarball), args)
+        code <- "do.call(BiocCheck::BiocCheck, args=args)"
         ## Assert that code is valid
         parse(text = code)
         stdin[1] <- code
