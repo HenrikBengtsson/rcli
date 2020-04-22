@@ -2,3 +2,4 @@
 
 export(is_debug_on)
 export(r_cmd_call)
+importFrom(utils,file_test)

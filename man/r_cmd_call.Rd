@@ -5,7 +5,7 @@
 \title{\emph{(EXPERIMENTAL)} Performs a tweaked 'R CMD' call}
 \usage{
 r_cmd_call(
-  extras = c("renviron"),
+  extras = c("debug", "flavor", "renviron"),
   args = commandArgs(trailingOnly = TRUE),
   unload = TRUE,
   debug = NA,

@@ -34,8 +34,10 @@
 #' `R_CHECK_ENVIRON` set to \file{~/.R/<name>-check.Renviron}.
 #'
 #' @keywords internal
+#'
+#' @importFrom utils file_test
 #' @export
-r_cmd_call <- function(extras = c("renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame()) {
+r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame()) {
   R_CMD <- Sys.getenv("R_CMD")
 
   ## Nothing to do?
@@ -47,28 +49,64 @@ r_cmd_call <- function(extras = c("renviron"), args = commandArgs(trailingOnly=T
   extras <- match.arg(extras, several.ok = TRUE)
   debug(debug)
   debug <- debug()
-
+  logf(" - checking for: %s", paste(sQuote(extras), collapse = ", "))
+  
   ## Get R CMD <command> options after --args
   args_org <- args
 
   ## Parse "nextArg" encoded arguments
   args <- strsplit(args, split = "nextArg", fixed = TRUE)[[1]]
   args <- args[nzchar(args)]
+  logf(" - args: %s", paste(sQuote(args), collapse = ", "))
 
   ## Check for custom R CMD <command> options
   custom <- FALSE
+
+  if ("debug" %in% extras) {
+    pattern <- "^--debug$"
+    pos <- grep(pattern, args)
+    if (length(pos) > 0L) {
+      debug(TRUE)
+      debug <- TRUE
+      logf("- debug mode: %s", sQuote(debug))
+      args <- args[-pos]
+      logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+      custom <- TRUE
+    }
+  }
+  logf(" - args: %s", paste(sQuote(args), collapse = ", "))
   
+  flavor <- NULL
+  if ("flavor" %in% extras) {
+    pattern <- "^--flavor=(.*)$"
+    pos <- grep(pattern, args)
+    if (length(pos) > 0L) {
+      logf(" - detected --flavor=<value>")
+      value <- gsub(pattern, "\\1", args[pos])
+      flavor <- value[length(value)]
+      logf("- --flavor=%s", sQuote(flavor))
+      args <- args[-pos]
+      logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+      custom <- TRUE
+    }
+  }
+
   renviron <- NULL
   if ("renviron" %in% extras) {
     pattern <- "^--renviron=(.*)$"
     pos <- grep(pattern, args)
     if (length(pos) > 0L) {
-      renviron <- gsub(pattern, "\\1", args[pos])
-      renviron <- renviron[length(renviron)]
+      logf(" - detected --renviron=<value>")
+      value <- gsub(pattern, "\\1", args[pos])
+      renviron <- value[length(value)]
+      logf("- --renviron=%s", sQuote(renviron))
       args <- args[-pos]
+      logf(" - args: %s", paste(sQuote(args), collapse = ", "))
       custom <- TRUE
     }
   }
+
+  logf(" - custom: %s", custom)
 
   ## No R CMD extras?
   if (!custom) {
@@ -76,10 +114,33 @@ r_cmd_call <- function(extras = c("renviron"), args = commandArgs(trailingOnly=T
     return()
   }
 
+  error <- function(fmtstr, ...) {
+    msg <- sprintf(fmtstr, ...)
+    msg <- sprintf("ERROR: %s", msg)
+    message(msg)
+    stop(msg)
+  }
+  
+  ## A good-enough approach to identify the tarball to be checked
+  cmd_args_tarball <- function(args) {
+    pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
+    tarball <- grep(pattern, args, value = TRUE)
+    if (length(tarball) == 0L) {
+      error("Did you forget to specify a tarball to be checked?")
+    }
+    tarball <- tarball[length(tarball)]
+    logf(" - tarball: %s", sQuote(tarball))
+    if (!file_test("-f", tarball)) {
+      error("No such file: ", sQuote(tarball))
+    }
+    tarball
+  }
 
   command <- NULL
   stdin <- NULL
-
+  prologue <- list()
+  epilogue <- list()
+  
   ## Then we need to infer what <command> is in use
   stdin <- readLines(stdin(), warn = FALSE)
   stdin <- stdin[nzchar(stdin)]
@@ -92,10 +153,35 @@ r_cmd_call <- function(extras = c("renviron"), args = commandArgs(trailingOnly=T
   } else {
     command <- "<unknown>"
   }
-  
-  ## Use a custom build/check renviron?
+  logf(" - command: %s", sQuote(command))
+
+
+  ## Use a custom check flavor?
+  if (!is.null(flavor)) {
+    if (command == "check") {
+      if (flavor == "bioc") {
+        tarball <- cmd_args_tarball(args)
+        ## Assert that the 'BiocCheck' package is installed
+        pkg <- "BiocCheck"
+        res <- requireNamespace(pkg, quietly = TRUE)
+        if (!res) error("Failed to load the '%s' package", pkg)
+        code <- sprintf("BiocCheck::BiocCheck(%s)", dQuote(tarball))
+        ## Assert that code is valid
+        parse(text = code)
+        epilogue[[flavor]] <- code
+      } else {
+        error("Unknown R CMD %s flavor: --flavor=%s", command, sQuote(flavor))
+      }
+      stdin[1] <- "tools:::.check_packages(args)"
+    } else {
+      error("Unknown R CMD %s option: --flavor=%s", command, sQuote(flavor))
+    }
+  }
+
+  logf(" - stdin: %s", paste(sQuote(stdin), collapse = " "))
+
+  ## Use a custom build/check Renviron file?
   if (!is.null(renviron)) {
-    stopifnot(!is.null(command))
     if (command %in% c("build", "check")) {
       env <- sprintf("R_%s_ENVIRON", toupper(command))
       default <- sprintf("~/.R/%s.Renviron", command)
@@ -106,8 +192,8 @@ r_cmd_call <- function(extras = c("renviron"), args = commandArgs(trailingOnly=T
       filename <- sprintf("%s-%s.Renviron", renviron, command)
       pathname <- file.path(path, filename)
       if (!is_file(pathname)) {
-        stop(sprintf("No such %s.Renviron file for R CMD check --renviron=%s: %s",
-                     command, renviron, sQuote(pathname)), call. = FALSE)
+        error("No such %s.Renviron file for R CMD check --renviron=%s: %s",
+              command, renviron, sQuote(pathname))
       }
       args0 <- list(pathname)
       names(args0) <- env
@@ -122,26 +208,47 @@ r_cmd_call <- function(extras = c("renviron"), args = commandArgs(trailingOnly=T
         stdin[1] <- "tools:::.check_packages(args)"
       }
     } else {
-      stop(sprintf("Unknown R CMD %s option: --renviron=%s",
-                   command, sQuote(renviron)))
+      error("Unknown R CMD %s option: --renviron=%s", command, sQuote(renviron))
     }
   }
-  
+
+
   ## If we intercepted the standard input, then treat it as code and
   ## evaluate it here
   if (!is.null(stdin)) {
-    logf("Tweaked R CMD %s call: %s",
-         command, sQuote(paste(stdin, collapse = "\n")))
-    
+    logf("Tweaked R CMD %s:", command)
+    logf(" - call: %s", sQuote(paste(stdin, collapse = " ")))
     expr <- parse(text = stdin)
+    logf(" - args: %s", paste(sQuote(args), collapse = ", "))
     assign("args", args, envir = envir, inherits = FALSE)
     on.exit(rm(list = "args", envir = envir, inherits = FALSE))
+    
+    if (!is.null(flavor)) {
+      cat(sprintf("* using epilogue (from --flavor=%s)\n", flavor))
+    }
     
     if (!is.null(renviron)) {
       cat(sprintf("* using %s=%s (from --renviron=%s)\n",
                   env, sQuote(pathname), renviron))
     }
-    eval(expr, envir = envir)
+
+    local({
+      opwd <- getwd()
+      logf("Working directory: %s", sQuote(opwd))
+      on.exit(setwd(opwd))
+      res <- eval(expr, envir = envir)
+      logf("Results: %s", paste(sQuote(res), collapse = ", "))
+    })
+    
+    if (length(epilogue) > 0L) {
+      for (name in names(epilogue)) {
+        cat(sprintf("* Epilogue '%s'\n", name))
+        code <- epilogue[[name]]
+        cat(sprintf("  - %s\n", code))
+        expr <- parse(text = code)
+        eval(expr, envir = envir)
+      }
+    }
   }
 
   if (unload) unload(debug = debug)
