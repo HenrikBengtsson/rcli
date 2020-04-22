@@ -296,10 +296,13 @@ import_check_flavors <- function(flavors) {
   ## Load packages named '<flavor>' and 'rcli.addons.<flavor>'
   ## if the exists. They will register the rcli addons when loaded.
   for (flavor in flavors) {
-    pkg <- flavor
-    if (requireNamespace(pkg, quietly = TRUE)) next
     pkg <- sprintf("rcli.addons.%s", flavor)
-    if (requireNamespace(pkg, quietly = TRUE)) next
+#    message("Trying to load: ", sQuote(pkg))
+    requireNamespace(pkg, quietly = TRUE)
+    pkg <- flavor
+#    message("Trying to load: ", sQuote(pkg))
+    requireNamespace(pkg, quietly = TRUE)
+#    message("Next ...")
   }
   
   check_flavors()
@@ -307,7 +310,45 @@ import_check_flavors <- function(flavors) {
 
 
 #' @importFrom R.utils commandArgs
-parse_check_flavor <- function(flavor, args = list(), ...) {
+parse_command_args <- function(args) {
+  ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
+  parsed_args <- commandArgs(asValues = TRUE, .args = c("", args))
+  is_empty <- vapply(parsed_args, FUN = identical, "", FUN.VALUE = FALSE)
+  if (is.null(names(parsed_args))) {
+    has_name <- rep(FALSE, times = length(parsed_args))
+  } else {
+    has_name <- nzchar(names(parsed_args))
+  }
+  parsed_args <- parsed_args[has_name | !is_empty]
+
+  ## Find tarball, if it exists
+  is_string <- vapply(parsed_args, FUN = is.character, FUN.VALUE = FALSE)
+  tarball <- parsed_args[is_string]
+  if (length(tarball) > 0L) {
+    tarball <- unlist(tarball, use.names = FALSE)
+    pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
+    idxs <- grep(pattern, tarball)
+    if (length(idxs) > 0L) {
+      tarball <- tarball[idxs]
+      logf(" - tarball: %s", paste(sQuote(tarball), collapse = ", "))
+      if (length(tarball) > 1L) {
+        error("More than one package tarball specific: ", paste(sQuote(tarball), collapse = ", "))
+      }
+      if (!file_test("-f", tarball)) {
+        error("Package tarball file does not exist: ", sQuote(tarball))
+      }
+      ## Drop the tarball argument
+      parsed_args[which(is_string)[idxs]] <- NULL
+      parsed_args$tarball <- tarball
+    }
+  }
+
+  attr(parsed_args, "command_line_arguments") <- args
+  parsed_args
+}
+
+
+parse_check_flavor <- function(flavor, args = character(0L), ...) {
   db <- import_check_flavors(flavor)
   
   fcn <- db[[flavor]]
@@ -315,9 +356,7 @@ parse_check_flavor <- function(flavor, args = list(), ...) {
     error("Unknown R CMD %s flavor: --flavor=%s", "check", sQuote(flavor))
   }
 
-  ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
-  parsed_args <- commandArgs(asValues = TRUE, .args = c("", args))
-  attr(parsed_args, "command_line_arguments") <- args
+  parsed_args <- parse_command_args(args)
   
   res <- fcn(args = parsed_args, ...)
 
@@ -330,3 +369,4 @@ parse_check_flavor <- function(flavor, args = list(), ...) {
   
   res
 }
+
