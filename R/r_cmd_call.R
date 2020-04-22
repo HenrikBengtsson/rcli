@@ -242,13 +242,43 @@ cmd_args_tarball <- function(args) {
 }
 
 
-parse_check_flavor <- function(flavor, ...) {
-  if (flavor == "BiocCheck") {
-    res <- parse_check_BiocCheck(...)
-  } else {
-    error("Unknown R CMD %s flavor: --flavor=%s", command, sQuote(flavor))
+check_flavors <- local({
+  db <- list()
+  
+  function(...) {
+    args <- list(...)
+
+    ## List registered check flavors
+    if (length(args) == 0L) return(db)
+
+    if (length(args) != 1L) stop("Maximum one argument can be specified")
+
+    arg <- args[[1]]
+    name <- names(args)[1]
+    if (is.character(arg)) {
+      res <- db[[arg]]
+      if (is.null(res)) stop("No such flavor: ", sQuote(arg))
+      return(res)
+    } else if (is.function(arg)) {
+      if (is.null(name)) stop("Flavor function must be named")
+      db[[name]] <<- arg
+      return(invisible(db))
+    } else {
+      stop("Unknown type of argument: ", sQuote(typeof(arg)))
+    }
   }
+})
+
+
+parse_check_flavor <- function(flavor, ...) {
+  db <- check_flavors()
+  fcn <- db[[flavor]]
+  if (is.null(fcn)) {
+    error("Unknown R CMD %s flavor: --flavor=%s", "check", sQuote(flavor))
+  }
+  fcn(...)
 }
+
 
 #' @importFrom R.utils commandArgs
 parse_check_BiocCheck <- function(args, stdin) {
@@ -274,3 +304,7 @@ parse_check_BiocCheck <- function(args, stdin) {
 
   res
 }
+
+
+## Register 'R CMD check' flavors
+check_flavors(BiocCheck = parse_check_BiocCheck)
