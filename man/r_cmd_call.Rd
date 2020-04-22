@@ -35,8 +35,8 @@ Nothing.
 \section{Installation & Usage}{
 
 This function should called at the end of the \file{Rprofile} startup file.
-For example, append:\if{html}{\out{<div class="r">}}\preformatted{if (requireNamespace("rcliaddons", quietly=TRUE)) \{
-  rcliaddons::r_cmd_call()
+For example, append:\if{html}{\out{<div class="r">}}\preformatted{if (requireNamespace("rcli", quietly=TRUE)) \{
+  rcli::r_cmd_call()
 \}
 }\if{html}{\out{</div>}}
 

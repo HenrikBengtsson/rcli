@@ -19,8 +19,8 @@
 #' This function should called at the end of the \file{Rprofile} startup file.
 #' For example, append:
 #' ```r
-#' if (requireNamespace("rcliaddons", quietly=TRUE)) {
-#'   rcliaddons::r_cmd_call()
+#' if (requireNamespace("rcli", quietly=TRUE)) {
+#'   rcli::r_cmd_call()
 #' }
 #' ```
 #' to your \file{~/.Rprofile} file.
@@ -305,5 +305,14 @@ parse_check_flavor <- function(flavor, args = list(), ...) {
   parsed_args <- commandArgs(asValues = TRUE, .args = c("", args))
   attr(parsed_args, "command_line_arguments") <- args
   
-  fcn(args = parsed_args, ...)
+  res <- fcn(args = parsed_args, ...)
+
+  ## Make sure that code is valid R code
+  expr <- tryCatch({
+    parse(text = res$stdin)
+  }, error = function(ex) {
+    error("INTERNAL ERROR: Syntax error: ", sQuote(res$stdin))
+  })
+  
+  res
 }

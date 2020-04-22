@@ -18,4 +18,3 @@ parse_check_BiocCheck <- function(args, stdin) {
 
   res
 }
-
