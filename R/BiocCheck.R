@@ -6,14 +6,13 @@ parse_check_BiocCheck <- function(args, stdin) {
   if (!res) error("Failed to load the '%s' package", pkg)
   
   ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
-  pargs <- commandArgs(asValues = TRUE, .args = c("", args))
-  
-  if (isTRUE(pargs$help)) {
+  args <- commandArgs(asValues = TRUE, .args = c("", args))
+  if (isTRUE(args$help)) {
     args <- list()
     code <- c("BiocCheck::usage()", "quit(save = 'no', status = 0L)")
   } else {
     tarball <- cmd_args_tarball(args)
-    args <- c(list(tarball), pargs)
+    args <- c(list(package = tarball), args)
     code <- "do.call(BiocCheck::BiocCheck, args=args)"
   }
   stdin <- code

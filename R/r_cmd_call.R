@@ -225,19 +225,42 @@ error <- function(fmtstr, ...) {
   stop(msg)
 }
 
+
 ## A good-enough approach to identify the tarball to be checked
 #' @importFrom utils file_test
 cmd_args_tarball <- function(args) {
+  stop_if_not(is.list(args))
+  
+  if (length(args) == 0L) {
+    error("No more arguments to parse")
+  }
+
+  names <- names(args)
+  args <- args[nchar(names) == 0L]
+  if (length(args) == 0L) {
+    error("Did you forget to specify a package tarball file?")
+  }
+
+  is_string <- vapply(args, FUN = is.character, FUN.VALUE = FALSE)
+  args <- args[is_string]
+  if (length(args) == 0L) {
+    error("Did you forget to specify a package tarball file?")
+  }
+
+  args <- unlist(args, use.names = FALSE)
   pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
   tarball <- grep(pattern, args, value = TRUE)
   if (length(tarball) == 0L) {
-    error("Did you forget to specify a tarball to be checked?")
+    error("Did you forget to specify a package tarball file?")
+  } else if (length(tarball) > 1L) {
+    error("Found more than one package tarball file: %s",
+          paste(sQuote(tarball), collapse = ", "))
   }
-  tarball <- tarball[length(tarball)]
   logf(" - tarball: %s", sQuote(tarball))
   if (!file_test("-f", tarball)) {
-    error("No such file: ", sQuote(tarball))
+    error("Package tarball file does not exist: ", sQuote(tarball))
   }
+  
   tarball
 }
 
