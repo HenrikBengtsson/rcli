@@ -13,6 +13,8 @@
 #' @param envir The environment where to evaluate any \R expression used
 #' internally by the `R CMD` call.
 #'
+#' @param dryrun If TRUE, nothing is evaluated.
+#'
 #' @return Nothing.
 #'
 #' @section Installation & Usage:
@@ -36,7 +38,7 @@
 #' @keywords internal
 #'
 #' @export
-r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame()) {
+r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
   R_CMD <- Sys.getenv("R_CMD")
 
   ## Nothing to do?
@@ -54,57 +56,56 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
   args_org <- args
 
   ## Parse "nextArg" encoded arguments
-  args <- strsplit(args, split = "nextArg", fixed = TRUE)[[1]]
+  args <- unlist(strsplit(args, split = "nextArg", fixed = TRUE), use.names = FALSE)
   args <- args[nzchar(args)]
   logf(" - args: %s", paste(sQuote(args), collapse = ", "))
 
   ## Check for custom R CMD <command> options
-  custom <- FALSE
+  params <- list(debug = NULL, as = NULL)
 
   if ("debug" %in% extras) {
     pattern <- "^--debug$"
     pos <- grep(pattern, args)
     if (length(pos) > 0L) {
-      debug(TRUE)
-      debug <- TRUE
-      logf("- debug mode: %s", sQuote(debug))
+      value <- TRUE
+      logf("- debug mode: %s", sQuote(value))
       args <- args[-pos]
       logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-      custom <- TRUE
+      params$debug <- debug <- value
+      debug(debug)
     }
   }
   logf(" - args: %s", paste(sQuote(args), collapse = ", "))
   
-  flavor <- NULL
-  if ("flavor" %in% extras) {
-    pattern <- "^--flavor=(.*)$"
+  if ("as" %in% extras) {
+    pattern <- "^--as=(.*)$"
     pos <- grep(pattern, args)
     if (length(pos) > 0L) {
-      logf(" - detected --flavor=<value>")
+      logf(" - detected --as=<value>")
       value <- gsub(pattern, "\\1", args[pos])
-      flavor <- value[length(value)]
-      logf("- --flavor=%s", sQuote(flavor))
+      value <- value[length(value)]
+      logf("- --as=%s", sQuote(value))
       args <- args[-pos]
       logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-      custom <- TRUE
+      params$as <- value
     }
   }
 
-  renviron <- NULL
   if ("renviron" %in% extras) {
     pattern <- "^--renviron=(.*)$"
     pos <- grep(pattern, args)
     if (length(pos) > 0L) {
       logf(" - detected --renviron=<value>")
       value <- gsub(pattern, "\\1", args[pos])
-      renviron <- value[length(value)]
-      logf("- --renviron=%s", sQuote(renviron))
+      value <- value[length(value)]
+      logf("- --renviron=%s", sQuote(value))
       args <- args[-pos]
       logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-      custom <- TRUE
+      params$renviron <- value
     }
   }
 
+  custom <- any(!vapply(params, FUN = is.null, FUN.VALUE = TRUE))
   logf(" - custom: %s", custom)
 
   ## No R CMD extras?
@@ -119,7 +120,8 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
   epilogue <- list()
   
   ## Then we need to infer what <command> is in use
-  stdin <- readLines(stdin(), warn = FALSE)
+  stdin <- getOption("rcli.debug.stdin", readLines(stdin(), warn = FALSE))
+  logf(" - stdin: %s", paste(sQuote(stdin), collapse = "; "))
   stdin <- stdin[nzchar(stdin)]
   if (stdin[1] == "tools:::.build_packages()") {
     command <- "build"
@@ -136,21 +138,21 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
   logf(" - command: %s", sQuote(command))
 
 
-  ## Use a custom check flavor?
-  if (!is.null(flavor)) {
+  ## Use a custom check as?
+  if (!is.null(params$as)) {
     if (command == "check") {
-      res <- parse_check_flavor(flavor, args = args, stdin = stdin)
+      res <- parse_check_as_option(params$as, args = args, stdin = stdin)
       args <- res$args
       stdin <- res$stdin
     } else {
-      error("Unknown R CMD %s option: --flavor=%s", command, sQuote(flavor))
+      error("Unknown R CMD %s option: --as=%s", command, sQuote(params$as))
     }
   }
 
   logf(" - stdin: %s", paste(sQuote(stdin), collapse = " "))
 
   ## Use a custom build/check Renviron file?
-  if (!is.null(renviron)) {
+  if (!is.null(params$renviron)) {
     if (command %in% c("build", "check")) {
       env <- sprintf("R_%s_ENVIRON", toupper(command))
       default <- sprintf("~/.R/%s.Renviron", command)
@@ -158,11 +160,11 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
       ## Infer where the Renviron file for this <command> should be
       pathname <- do.call(Sys.getenv, args = list(env, unset = default))
       path <- dirname(pathname)
-      filename <- sprintf("%s-%s.Renviron", renviron, command)
+      filename <- sprintf("%s-%s.Renviron", params$renviron, command)
       pathname <- file.path(path, filename)
       if (!is_file(pathname)) {
         error("No such %s.Renviron file for R CMD check --renviron=%s: %s",
-              command, renviron, sQuote(pathname))
+              command, params$renviron, sQuote(pathname))
       }
       args0 <- list(pathname)
       names(args0) <- env
@@ -171,7 +173,7 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
       pathname <- do.call(Sys.getenv, args = list(env))
       stopifnot(nzchar(pathname))
     } else {
-      error("Unknown R CMD %s option: --renviron=%s", command, sQuote(renviron))
+      error("Unknown R CMD %s option: --renviron=%s", command, sQuote(params$renviron))
     }
   }
 
@@ -182,24 +184,25 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
     logf("Tweaked R CMD %s:", command)
     logf(" - call: %s", sQuote(paste(stdin, collapse = " ")))
     expr <- parse(text = stdin)
-    logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+    logf(" - args: %s", paste(sQuote(unlist(args)), collapse = ", "))
     assign("args", args, envir = envir, inherits = FALSE)
     on.exit(rm(list = "args", envir = envir, inherits = FALSE), add = TRUE)
     
-    if (!is.null(renviron)) {
+    if (!is.null(params$renviron)) {
       cat(sprintf("* using %s=%s (from --renviron=%s)\n",
-                  env, sQuote(pathname), renviron))
+                  env, sQuote(pathname), params$renviron))
     }
 
-#    if (!is.null(flavor)) {
-#      cat(sprintf("* using --flavor=%s\n", flavor))
+#    if (!is.null(params$as)) {
+#      cat(sprintf("* using --as=%s\n", params$as))
 #    }
     
     local({
       opwd <- getwd()
       logf("Working directory: %s", sQuote(opwd))
       on.exit(setwd(opwd))
-      res <- eval(expr, envir = envir)
+      logf("Expression: %s", paste(deparse(expr), collapse = " "))
+      if (!dryrun) eval(expr, envir = envir)
       logf("Results: %s", paste(sQuote(res), collapse = ", "))
     })
     
@@ -209,7 +212,7 @@ r_cmd_call <- function(extras = c("debug", "flavor", "renviron"), args = command
         code <- epilogue[[name]]
         cat(sprintf("  - %s\n", code))
         expr <- parse(text = code)
-        eval(expr, envir = envir)
+        if (!dryrun) eval(expr, envir = envir)
       }
     }
   }
@@ -265,13 +268,13 @@ cmd_args_tarball <- function(args) {
 }
 
 
-check_flavors <- local({
+check_as_functions <- local({
   db <- list()
   
   function(...) {
     args <- list(...)
 
-    ## List registered check flavors
+    ## List registered check "as" functions
     if (length(args) == 0L) return(db)
 
     if (length(args) != 1L) stop("Maximum one argument can be specified")
@@ -280,10 +283,10 @@ check_flavors <- local({
     name <- names(args)[1]
     if (is.character(arg)) {
       res <- db[[arg]]
-      if (is.null(res)) stop("No such flavor: ", sQuote(arg))
+      if (is.null(res)) stop("No such 'as' function: ", sQuote(arg))
       return(res)
     } else if (is.function(arg)) {
-      if (is.null(name)) stop("Flavor function must be named")
+      if (is.null(name)) stop("The function must be named")
       db[[name]] <<- arg
       return(invisible(db))
     } else {
@@ -292,20 +295,20 @@ check_flavors <- local({
   }
 })
 
-import_check_flavors <- function(flavors) {
-  ## Load packages named '<flavor>' and 'rcli.addons.<flavor>'
-  ## if the exists. They will register the rcli addons when loaded.
-  for (flavor in flavors) {
-    pkg <- sprintf("rcli.addons.%s", flavor)
+import_check_as_functions <- function(names) {
+  ## Load packages named '<as>' and 'rcli.addon.<as>'
+  ## if the exists. They will register their rcli addons when loaded.
+  for (as in names) {
+    pkg <- sprintf("rcli.addon.%s", as)
 #    message("Trying to load: ", sQuote(pkg))
     requireNamespace(pkg, quietly = TRUE)
-    pkg <- flavor
+    pkg <- as
 #    message("Trying to load: ", sQuote(pkg))
     requireNamespace(pkg, quietly = TRUE)
 #    message("Next ...")
   }
   
-  check_flavors()
+  check_as_functions()
 }
 
 
@@ -348,12 +351,12 @@ parse_command_args <- function(args) {
 }
 
 
-parse_check_flavor <- function(flavor, args = character(0L), ...) {
-  db <- import_check_flavors(flavor)
+parse_check_as_option <- function(name, args = character(0L), ...) {
+  db <- import_check_as_functions(name)
   
-  fcn <- db[[flavor]]
+  fcn <- db[[name]]
   if (is.null(fcn)) {
-    error("Unknown R CMD %s flavor: --flavor=%s", "check", sQuote(flavor))
+    error("Unknown R CMD %s value on --%s=%s", "check", "as", sQuote(name))
   }
 
   parsed_args <- parse_command_args(args)
@@ -369,4 +372,3 @@ parse_check_flavor <- function(flavor, args = character(0L), ...) {
   
   res
 }
-

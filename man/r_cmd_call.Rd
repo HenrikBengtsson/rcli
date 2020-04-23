@@ -5,11 +5,12 @@
 \title{\emph{(EXPERIMENTAL)} Performs a tweaked 'R CMD' call}
 \usage{
 r_cmd_call(
-  extras = c("debug", "flavor", "renviron"),
+  extras = c("debug", "as", "renviron"),
   args = commandArgs(trailingOnly = TRUE),
   unload = TRUE,
   debug = NA,
-  envir = parent.frame()
+  envir = parent.frame(),
+  dryrun = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ not.}
 
 \item{envir}{The environment where to evaluate any \R expression used
 internally by the \verb{R CMD} call.}
+
+\item{dryrun}{If TRUE, nothing is evaluated.}
 }
 \value{
 Nothing.
