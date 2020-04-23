@@ -3,7 +3,7 @@ library(rcli)
 Sys.setenv(R_CMD = TRUE)
 options(
   rcli.debug.stdin = "tools:::.check_packages()",
-  rcli.debug.exit  = FALSE
+  rcli.done.action  = "return"
 )
 
 bfr0 <- utils::capture.output({

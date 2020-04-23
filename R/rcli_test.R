@@ -15,13 +15,7 @@ rcli_test_help <- function() {
 parse_check_rcli_test <- function(args, stdin) {
   if (isTRUE(args$help)) {
     args <- list()
-    code <- c("rcli:::rcli_test_help()")
-    exit <- getOption("rcli.debug.exit", TRUE)
-    code <- c(code, if (exit) {
-      "quit(save = 'no', status = 0L)"
-    } else {
-      "return(invisible(0L))"
-    })
+    code <- c("rcli:::rcli_test_help()", "rcli:::done()")
   } else {
     code <- character(0L)
   }
