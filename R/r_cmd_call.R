@@ -363,6 +363,9 @@ parse_check_as_option <- function(name, args = character(0L), ...) {
   
   res <- fcn(args = parsed_args, ...)
 
+  stop_if_not(is.list(res$args))
+  stop_if_not(is.character(res$stdin))
+
   ## Make sure that code is valid R code
   expr <- tryCatch({
     parse(text = res$stdin)
