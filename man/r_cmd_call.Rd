@@ -30,7 +30,7 @@ internally by the \verb{R CMD} call.}
 \item{dryrun}{If TRUE, nothing is evaluated.}
 }
 \value{
-Nothing.
+(logical; invisible) TRUE or FALSE.
 }
 \description{
 \emph{(EXPERIMENTAL)} Performs a tweaked 'R CMD' call
@@ -38,7 +38,7 @@ Nothing.
 \section{Installation & Usage}{
 
 This function should called at the end of the \file{Rprofile} startup file.
-For example, append:\if{html}{\out{<div class="r">}}\preformatted{if (requireNamespace("rcli", quietly=TRUE)) \{
+For example, append:\if{html}{\out{<div class="r">}}\preformatted{if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) \{
   rcli::r_cmd_call()
 \}
 }\if{html}{\out{</div>}}

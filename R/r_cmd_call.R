@@ -15,13 +15,13 @@
 #'
 #' @param dryrun If TRUE, nothing is evaluated.
 #'
-#' @return Nothing.
+#' @return (logical; invisible) TRUE or FALSE.
 #'
 #' @section Installation & Usage:
 #' This function should called at the end of the \file{Rprofile} startup file.
 #' For example, append:
 #' ```r
-#' if (requireNamespace("rcli", quietly=TRUE)) {
+#' if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) {
 #'   rcli::r_cmd_call()
 #' }
 #' ```
@@ -44,7 +44,7 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   ## Nothing to do?
   if (!nzchar(R_CMD) || length(args) == 0L || length(extras) == 0L) {
     if (unload) unload()
-    return()
+    return(invisible(FALSE))
   }
 
   extras <- match.arg(extras, several.ok = TRUE)
@@ -111,11 +111,12 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   ## No R CMD extras?
   if (!custom) {
     if (unload) unload(debug = debug)
-    return()
+    return(invisible(FALSE))
   }
 
   command <- NULL
   stdin <- NULL
+  silent <- FALSE
   prologue <- list()
   epilogue <- list()
   
@@ -145,6 +146,7 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
       res <- parse_check_as_option(params$as, args = args, stdin = stdin)
       args <- res$args
       stdin <- res$stdin
+      silent <- isTRUE(res$silent)
     } else {
       error("Unknown R CMD %s option: --as=%s", command, sQuote(params$as))
     }
@@ -189,12 +191,12 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
     assign("args", args, envir = envir, inherits = FALSE)
     on.exit(rm(list = "args", envir = envir, inherits = FALSE), add = TRUE)
 
-    if (!is.null(params$as)) {
+    if (!silent && !is.null(params$as)) {
       cat(sprintf("* using --as=%s\n", params$as))
     }
     
     pathname <- Sys.getenv("R_CHECK_ENVIRON", NA_character_)
-    if (!is.na(pathname)) {
+    if (!silent && !is.na(pathname)) {
       cat(sprintf("* using R_CHECK_ENVIRON=%s\n", dQuote(pathname)))
       if (!file_test("-f", pathname)) {
         error("No such file: %s", sQuote(pathname))
@@ -228,6 +230,8 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   }
 
   if (unload) unload(debug = debug)
+
+  invisible(TRUE)
 }
 
 

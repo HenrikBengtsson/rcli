@@ -12,12 +12,16 @@ rcli_test_help <- function() {
   cat("\n")
 }
 
+check_help <- function(args, stdin) {
+  list(
+    args   = list(),
+    stdin  = c("rcli:::rcli_test_help()", "rcli:::done()"),
+    silent = TRUE
+  )
+}
+
 parse_check_rcli_test <- function(args, stdin) {
-  if (isTRUE(args$help)) {
-    args <- list()
-    code <- c("rcli:::rcli_test_help()", "rcli:::done()")
-  } else {
-    code <- character(0L)
-  }
-  list(args = args, stdin = code)
+  if (isTRUE(args$help)) return(check_help())
+
+  list(args = args, stdin = character(0L))
 }
