@@ -20,7 +20,7 @@ check_help <- function(args, stdin) {
   )
 }
 
-parse_check_rcli_test <- function(args, stdin) {
+check_rcli_test <- function(args, stdin) {
   if (isTRUE(args$help)) return(check_help())
 
   list(args = args, stdin = character(0L))

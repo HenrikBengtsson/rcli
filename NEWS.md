@@ -1,6 +1,6 @@
 # Package: rcli
 
-## Version: 0.0.0-9000 [2019-04-21]
+## Version: 0.0.0-9000 [2019-04-24]
 
 ### New Features
 
@@ -16,3 +16,5 @@
    built-in style, then the package **rcli.addon.{style}** is loaded if it
    is available, which should then register a corresponding "as" function.
    A built-in example is `R CMD check --as=rcli-test --help`.
+
+ * Add --as=cran, which is equivalent to --as-cran.
