@@ -14,6 +14,25 @@ stop_if_not <- function(...) {
   }
 }
 
+
+error <- function(fmtstr, ..., call. = TRUE) {
+  msg <- sprintf(fmtstr, ...)
+  msg <- sprintf("ERROR: %s", msg)
+  message(msg)
+  stop(msg, call. = call.)
+}
+
+error_if_not <- function(...) {
+  exprs <- substitute(...)
+  expr <- bquote({
+    tryCatch(stop_if_not(.(exprs)), error = function(ex) {
+      error("INTERNAL ERROR: %s", conditionMessage(ex))
+    })
+  })
+  eval.parent(expr)
+}
+
+
 is_dir <- function(f) {
   if (length(f) != 1L) {
     stop(sprintf("INTERNAL ERROR in %s:::is_dir(): only scalar input is supported: [n=%d] %s", .packageName, length(f), paste(sQuote(f), collapse = ", ")))

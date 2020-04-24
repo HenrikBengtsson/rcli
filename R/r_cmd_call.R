@@ -171,7 +171,7 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
       do.call(Sys.setenv, args = args0)
 
       pathname <- do.call(Sys.getenv, args = list(env))
-      stopifnot(nzchar(pathname))
+      error_if_not(nzchar(pathname))
     } else {
       error("Unknown R CMD %s option: --renviron=%s", command, sQuote(params$renviron))
     }
@@ -187,22 +187,31 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
     logf(" - args: %s", paste(sQuote(unlist(args)), collapse = ", "))
     assign("args", args, envir = envir, inherits = FALSE)
     on.exit(rm(list = "args", envir = envir, inherits = FALSE), add = TRUE)
+
+    if (!is.null(params$as)) {
+      cat(sprintf("* using --as=%s\n", params$as))
+    }
     
-    if (!is.null(params$renviron)) {
-      cat(sprintf("* using %s=%s (from --renviron=%s)\n",
-                  env, sQuote(pathname), params$renviron))
+    pathname <- Sys.getenv("R_CHECK_ENVIRON", NA_character_)
+    if (!is.na(pathname)) {
+      cat(sprintf("* using R_CHECK_ENVIRON=%s\n", dQuote(pathname)))
+      if (!file_test("-f", pathname)) {
+        error("No such file: %s", sQuote(pathname))
+      }
     }
 
-#    if (!is.null(params$as)) {
-#      cat(sprintf("* using --as=%s\n", params$as))
-#    }
-    
     local({
       opwd <- getwd()
       logf("Working directory: %s", sQuote(opwd))
       on.exit(setwd(opwd))
       logf("Expression: %s", paste(deparse(expr), collapse = " "))
-      if (!dryrun) eval(expr, envir = envir)
+      if (!dryrun) {
+        tryCatch({
+          res <- eval(expr, envir = envir)
+        }, error = function(ex) {
+          error("INTERNAL ERROR: %s", conditionMessage(ex))
+        })
+      }
       logf("Results: %s", paste(sQuote(res), collapse = ", "))
     })
     
@@ -221,18 +230,10 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
 }
 
 
-error <- function(fmtstr, ...) {
-  msg <- sprintf(fmtstr, ...)
-  msg <- sprintf("ERROR: %s", msg)
-  message(msg)
-  stop(msg)
-}
-
-
 ## A good-enough approach to identify the tarball to be checked
 #' @importFrom utils file_test
 cmd_args_tarball <- function(args) {
-  stop_if_not(is.list(args))
+  error_if_not(is.list(args))
   
   if (length(args) == 0L) {
     error("No more arguments to parse")
@@ -296,13 +297,16 @@ check_as_functions <- local({
 })
 
 import_check_as_functions <- function(names) {
-  ## Load packages named '<as>' and 'rcli.addon.<as>'
-  ## if the exists. They will register their rcli addons when loaded.
-  for (as in names) {
-    pkg <- sprintf("rcli.addon.%s", as)
+  ## Load packages named 'rcli.addon.{as}' and '{as}', if they exists.
+  ## If {as} is of form {head}::{tail} or {head}-{tail}, then
+  ## {head} is used instead of {as} to load packages.
+  ## A rcli "addon" package should register their rcli addons when loaded.
+  for (name in names) {
+    name <- gsub("(::|-).*", "", name)
+    pkg <- sprintf("rcli.addon.%s", name)
 #    message("Trying to load: ", sQuote(pkg))
     requireNamespace(pkg, quietly = TRUE)
-    pkg <- as
+    pkg <- name
 #    message("Trying to load: ", sQuote(pkg))
     requireNamespace(pkg, quietly = TRUE)
 #    message("Next ...")
@@ -356,15 +360,19 @@ parse_check_as_option <- function(name, args = character(0L), ...) {
   
   fcn <- db[[name]]
   if (is.null(fcn)) {
-    error("Unknown R CMD %s value on --%s=%s", "check", "as", sQuote(name))
+    msg <- sprintf("Unknown R CMD %s value on --%s=%s. There are %d registered styles", "check", "as", sQuote(name), length(db))
+    if (length(db) > 0) {
+      msg <- sprintf("%s (%s)", msg, paste(sQuote(names(db)), collapse = ", "))
+    }
+    error(msg)
   }
 
   parsed_args <- parse_command_args(args)
   
   res <- fcn(args = parsed_args, ...)
-
-  stop_if_not(is.list(res$args))
-  stop_if_not(is.character(res$stdin))
+  
+  error_if_not(is.list(res$args) || is.character(res$args))
+  error_if_not(is.character(res$stdin))
 
   ## Make sure that code is valid R code
   expr <- tryCatch({
