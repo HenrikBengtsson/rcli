@@ -136,7 +136,8 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
     command <- "<unknown>"
   }
   logf(" - command: %s", sQuote(command))
-
+  logf(" - stdin: %s", sQuote(stdin))
+  logs(" - str: %s", sQuote(params))
 
   ## Use a custom check as?
   if (!is.null(params$as)) {
@@ -327,12 +328,10 @@ parse_command_args <- function(args) {
     has_name <- nzchar(names(parsed_args))
   }
   parsed_args <- parsed_args[has_name | !is_empty]
-
+  
   ## Find tarball, if it exists
-  is_string <- vapply(parsed_args, FUN = is.character, FUN.VALUE = FALSE)
-  tarball <- parsed_args[is_string]
-  if (length(tarball) > 0L) {
-    tarball <- unlist(tarball, use.names = FALSE)
+  if (length(parsed_args) > 0L) {
+    tarball <- unlist(parsed_args, use.names = FALSE)
     pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
     idxs <- grep(pattern, tarball)
     if (length(idxs) > 0L) {
@@ -344,11 +343,24 @@ parse_command_args <- function(args) {
       if (!file_test("-f", tarball)) {
         error("Package tarball file does not exist: ", sQuote(tarball))
       }
-      ## Drop the tarball argument
-      parsed_args[which(is_string)[idxs]] <- NULL
+      ## Move tarball argument to the end
+      parsed_args[idxs] <- NULL
       parsed_args$tarball <- tarball
+
+      ## Drop from non-parsed CLI args too
+      pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
+      idxs <- grep(pattern, args)
+      args <- c(args[-idxs], tarball)
+      
+      ## Sanity check
+      logs(list(kk=2, parsed_args =parsed_args, args = args))
+#      error_if_not(length(parsed_args) == length(args))
     }
   }
+
+  ## Sanity check
+  logs(list(kk=3, parsed_args =parsed_args, args = args))
+#  error_if_not(length(parsed_args) == length(args))
 
   attr(parsed_args, "command_line_arguments") <- args
   parsed_args
@@ -356,8 +368,13 @@ parse_command_args <- function(args) {
 
 
 parse_check_as_option <- function(name, args = character(0L), ...) {
-  db <- import_check_as_functions(name)
+  logs("parse_check_as_option() ...")
+  on.exit(logs("parse_check_as_option() ... done"), add = TRUE)
   
+  db <- import_check_as_functions(name)
+
+  logf(" - registered check '--as' methods: %s", sQuote(names(db)))
+
   fcn <- db[[name]]
   if (is.null(fcn)) {
     msg <- sprintf("Unknown R CMD %s value on --%s=%s. There are %d registered styles", "check", "as", sQuote(name), length(db))
@@ -367,10 +384,18 @@ parse_check_as_option <- function(name, args = character(0L), ...) {
     error(msg)
   }
 
+  logf(" - identified '--as' methods: %s", sQuote(name))
+
   parsed_args <- parse_command_args(args)
+  logs(list(parsed_args = parsed_args))
   
-  res <- fcn(args = parsed_args, ...)
-  
+  logp(list(fcn = fcn))
+  tryCatch({
+    res <- fcn(args = parsed_args, ...)
+  }, error = function(ex) {
+    error("INTERNAL ERROR: ", conditionMessage(ex))
+  })
+  logs(list(res = res))
   error_if_not(is.list(res$args) || is.character(res$args))
   error_if_not(is.character(res$stdin))
 

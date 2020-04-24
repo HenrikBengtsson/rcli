@@ -16,8 +16,8 @@ debug <- local({
 
   function(new = NA) {
     if (is.na(status)) {
-      t <- as.logical(Sys.getenv("R_RCLIADDONS_DEBUG", NA))
-      t <- getOption("rcliaddons.debug", t)
+      t <- as.logical(Sys.getenv("R_RCLI_DEBUG", NA))
+      t <- getOption("rcli.debug", t)
 
       ## If neither env var nor option is specified, then
       ## look at command-line options
@@ -54,6 +54,11 @@ logf <- function(..., collapse = "\n", appendLF = TRUE) {
 
 logp <- function(expr, ...) {
   log(utils::capture.output(print(expr)), ...)
+}
+
+#' @importFrom utils str
+logs <- function(expr, ...) {
+  log(utils::capture.output(str(expr)), ...)
 }
 
 timestamp <- local({
