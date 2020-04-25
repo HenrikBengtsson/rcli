@@ -65,6 +65,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   ## Check for custom R CMD <command> options
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  silent <- FALSE
   params <- list(debug = NULL, as = NULL)
 
   ready <- FALSE
@@ -111,6 +112,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
           ## Special: Process configuration file as soon as possible
           if (name == "config") {
             pathname <- value
+            if (!silent) cat(sprintf("* using --config=%s\n", dQuote(pathname)))
             logf(" - Reading config file: %s", sQuote(pathname))
             config <- parse_config_dcf(pathname)
             logp(config)
@@ -161,7 +163,6 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   command <- NULL
   stdin <- NULL
-  silent <- FALSE
   
   ## Then we need to infer what <command> is in use
   stdin <- getOption("rcli.debug.stdin", readLines(stdin(), warn = FALSE))
