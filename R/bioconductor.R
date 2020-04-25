@@ -14,6 +14,7 @@ set_bioconductor <- function(version = NULL) {
     })
   }
   bioc_version <- package_version(version)
+  logf("- using Bioconductor version: %s", bioc_version)
   sprintf("bioc-%s", bioc_version)
 }
 
