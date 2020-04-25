@@ -145,6 +145,7 @@ parse_config_dcf <- function(pathname) {
     unlist(x)
   })
 
+  ## Parse 'env' entries
   if (length(config$env) > 0L) {
     pattern <- "^([^=]+)=(.*)$"
     invalid <- grep(pattern, config$env, invert = TRUE)
@@ -162,6 +163,14 @@ parse_config_dcf <- function(pathname) {
     }
     config$env <- envs
   }
-  
+
+  ## Parse 'asserts' entries
+  if (length(config$assert) > 0L) {
+    logp(config$assert)
+    tryCatch(parse(text = config$assert), error = function(ex) {
+      error("Syntax error in %s entry of configuration file %s: %s", sQuote("assert"), sQuote(pathname), conditionMessage(ex))
+    })
+  }
+
   config
 }

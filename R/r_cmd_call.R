@@ -153,9 +153,28 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
     logf(" - Reading config file: %s", sQuote(pathname))
     config <- parse_config_dcf(pathname)
     logp(config)
+
+    if (length(config$assert) > 0L) {
+      exprs <- parse(text = config$assert)
+      for (kk in seq_along(exprs)) {
+        expr <- exprs[[kk]]
+        res <- tryCatch(eval(expr, envir = envir), error = identity)
+        if (inherits(res, "error")) {
+          error("Evaluation of %s expression #%d resulted in an error: %s",
+                sQuote("assert"), kk, conditionMessage(res))
+        }
+        logs(list(expr = expr, res = res))
+        if (!is.logical(res) || length(res) != 1L || is.na(res)) {
+          error("Expression #%d (%s) of %s did not return TRUE or FALSE: %s",
+                kk, paste(deparse(expr), collapse = "; "), sQuote("assert"), paste(deparse(res), collapse = "; "))
+        }
+        if (!res) {
+          error("Cannot use configuration file (%s) because of unfullfilled assertion: %s", sQuote(pathname), paste(deparse(expr), collapse = "; "))
+        }
+      }
+    }
     
     if (length(config$env) > 0L) do.call(Sys.setenv, args = config$env)
-
     args <- c(args, config$options)
   }
 
