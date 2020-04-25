@@ -1,5 +1,5 @@
 Package: rcli
-Title: Addons for the R Command-Line Interface
+Title: R Command-Line Interface Booster
 Imports:
     utils,
     R.utils
