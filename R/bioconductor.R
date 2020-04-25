@@ -29,10 +29,12 @@ check_bioconductor_help <- function() {
 
 check_bioconductor_default <- function(args, stdin) {
   pathname <- get_Renviron("check", set = set_bioconductor())
-  if (!is.null(pathname)) {
-    logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
-    Sys.setenv(R_CHECK_ENVIRON = pathname)
+  if (is.null(pathname)) {
+    error("Failed to located Renviron file for Bioconductor version %s: %s", bioconductor_version(), sQuote(pathname))
   }
+
+  logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
+  Sys.setenv(R_CHECK_ENVIRON = pathname)
 
   args <- attr(args, "command_line_arguments")
   
