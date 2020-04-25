@@ -138,7 +138,8 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   }
   logf(" - command: %s", sQuote(command))
   logf(" - stdin: %s", sQuote(stdin))
-  logs(" - str: %s", sQuote(params))
+  log(" - str:")
+  logs(sQuote(params))
 
   ## Use a custom check as?
   if (!is.null(params$as)) {
@@ -357,13 +358,13 @@ parse_command_args <- function(args) {
       args <- c(args[-idxs], tarball)
       
       ## Sanity check
-      logs(list(kk=2, parsed_args =parsed_args, args = args))
+#      logs(list(kk=2, parsed_args =parsed_args, args = args))
 #      error_if_not(length(parsed_args) == length(args))
     }
   }
 
   ## Sanity check
-  logs(list(kk=3, parsed_args =parsed_args, args = args))
+#  logs(list(kk=3, parsed_args =parsed_args, args = args))
 #  error_if_not(length(parsed_args) == length(args))
 
   attr(parsed_args, "command_line_arguments") <- args
