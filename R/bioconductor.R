@@ -22,8 +22,6 @@ check_bioconductor_help <- function() {
 
 
 check_bioconductor_default <- function(args, stdin) {
-  if (isTRUE(args$help)) return(check_bioconductor_help())
-
   pathname <- get_Renviron("check", set = set_bioconductor())
   if (!is.null(pathname)) {
     logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))

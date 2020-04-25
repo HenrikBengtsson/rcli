@@ -13,12 +13,18 @@ get_Renviron <- function(what = c("build", "check"), set, package = .packageName
   }
 
   value <- Sys.getenv(env, NA_character_)
-  if (!is.na(value)) return(value)
+  if (!is.na(value)) {
+    logf("- Already set R_CHECK_ENVIRON=%s", value)
+    return(value)
+  }
 
   filename <- sprintf("%s.Renviron", what)
 
   pathname <- file.path(path, filename)
+  logf("- Look for R_CHECK_ENVIRON file: %s", sQuote(pathname))
   if (!file_test("-f", pathname)) return(NULL)
+
+  logf("- R_CHECK_ENVIRON file found: %s", sQuote(pathname))
 
   pathname
 }
