@@ -37,7 +37,6 @@
 #'
 #' @keywords internal
 #'
-#' @importFrom R.utils insert
 #' @export
 r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
   R_CMD <- Sys.getenv("R_CMD")
@@ -137,10 +136,11 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
                  sQuote(pathname),
                  paste(sQuote(config$options), collapse = ", "))
             logs(list(args = args, new = config$options, pos = pos))
-            if (pos == 1L) {
-              args <- c(config$options, args)
-            } else {
-              args <- insert(args, ats = pos - 1L, values = config$options)
+            
+            if (length(config$options) > 0L) {
+              head <- seq_len(pos - 1L)
+              tail <- setdiff(seq_along(args), head)
+              args <- c(args[head], config$options, args[tail])
             }
             
             logf(" - args: %s", paste(sQuote(args), collapse = ", "))

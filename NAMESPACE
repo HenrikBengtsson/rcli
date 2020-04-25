@@ -3,7 +3,6 @@
 export(is_debug_on)
 export(r_cmd_call)
 importFrom(R.utils,commandArgs)
-importFrom(R.utils,insert)
 importFrom(utils,file_test)
 importFrom(utils,packageVersion)
 importFrom(utils,str)
