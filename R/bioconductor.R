@@ -25,7 +25,10 @@ check_bioconductor_default <- function(args, stdin) {
   if (isTRUE(args$help)) return(check_bioconductor_help())
 
   pathname <- get_Renviron("check", set = set_bioconductor())
-  if (!is.null(pathname)) Sys.setenv(R_CHECK_ENVIRON = pathname)
+  if (!is.null(pathname)) {
+    logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
+    Sys.setenv(R_CHECK_ENVIRON = pathname)
+  }
 
   args <- attr(args, "command_line_arguments")
   
@@ -36,7 +39,10 @@ check_bioconductor_BiocCheck <- function(args, stdin) {
   if (isTRUE(args$help)) return(check_bioconductor_help())
 
   pathname <- get_Renviron("check", set = set_bioconductor())
-  if (!is.null(pathname)) Sys.setenv(R_CHECK_ENVIRON = pathname)
+  if (!is.null(pathname)) {
+    logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
+    Sys.setenv(R_CHECK_ENVIRON = pathname)
+  }
 
   args <- c(list(package = args$tarball), args)
   stdin <- "do.call(BiocCheck::BiocCheck, args=args)"

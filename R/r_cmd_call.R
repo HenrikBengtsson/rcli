@@ -221,6 +221,8 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
         error("No such %s.Renviron file for R CMD check --renviron=%s: %s",
               command, params$renviron, sQuote(pathname))
       }
+      
+      logf("- Setting environment variable %s=%s", env, dQuote(pathname))
       args0 <- list(pathname)
       names(args0) <- env
       do.call(Sys.setenv, args = args0)
