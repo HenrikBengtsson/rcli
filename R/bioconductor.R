@@ -29,7 +29,7 @@ set_bioconductor <- function(version = NULL) {
 check_bioconductor_help <- function() {
   list(
     args  = list(),
-    stdin = c("BiocCheck::usage()", "rcli:::done()"),
+    stdin = c('suppressMessages(requireNamespace("BiocCheck"))', "BiocCheck::usage()", "rcli:::done()"),
     silent = TRUE
   )
 }
@@ -59,7 +59,8 @@ check_bioconductor_BiocCheck <- function(args, stdin) {
   }
 
   args <- c(list(package = args$tarball), args)
-  stdin <- "do.call(BiocCheck::BiocCheck, args=args)"
+  stdin <- c('suppressMessages(requireNamespace("BiocCheck"))',
+             "do.call(BiocCheck::BiocCheck, args=args)")
 
   list(args = args, stdin = stdin)
 }
