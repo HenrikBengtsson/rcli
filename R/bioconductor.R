@@ -1,10 +1,18 @@
 #' @importFrom utils packageVersion
 bioconductor_version <- function() {
   v <- Sys.getenv("R_BIOC_VERSION")
-  if (nzchar(v)) return(package_version(v))
-  v <- tryCatch(packageVersion("BiocVersion")[,1:2], error = function(e) NULL)
-  if (!is.null(v)) return(v)
-  NULL
+  if (nzchar(v)) {
+    v <- package_version(v)
+    attr(v, "source") <- "R_BIOC_VERSION"   
+    logf("- R_BIOC_VERSION=%s", v)
+  } else {
+    v <- tryCatch(packageVersion("BiocVersion")[,1:2], error = function(e) NULL)
+    if (!is.null(v)) {
+      attr(v, "source") <- "BiocVersion"   
+      logf("- BiocVersion v%s.*", v)
+    }
+  }
+  v
 }
 
 set_bioconductor <- function(version = NULL) {
@@ -13,8 +21,8 @@ set_bioconductor <- function(version = NULL) {
       error("Failed to infer Bioconductor version: %s", conditionMessage(ex))
     })
   }
-  bioc_version <- package_version(version)
-  logf("- using Bioconductor version: %s", bioc_version)
+  bioc_version <- version
+  cat(sprintf("* using Bioconductor version: %s (per %s)\n", bioc_version, attr(bioc_version, "source")))
   sprintf("bioc-%s", bioc_version)
 }
 
