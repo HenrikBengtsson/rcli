@@ -15,6 +15,7 @@ Validate that you get the following output:
 ```sh
 $ R CMD check --as=rcli-test
 * using --as=rcli-test
+$ 
 ```
 
 
