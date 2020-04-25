@@ -37,6 +37,7 @@
 #'
 #' @keywords internal
 #'
+#' @importFrom R.utils insert
 #' @export
 r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
   R_CMD <- Sys.getenv("R_CMD")
@@ -66,49 +67,89 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   params <- list(debug = NULL, as = NULL)
 
-  ## Flags
-  for (name in c("debug")) {
-    if (name %in% extras) {
-      pattern <- sprintf("^--%s$", name)
-      pos <- grep(pattern, args)
-      if (length(pos) > 0L) {
-        ## Special (enable debug as soon as possible)
-        if (name == "debug") {
-          debug <- TRUE
-          debug(TRUE)
-          logf("- debug mode: %s", sQuote(debug))
+  ready <- FALSE
+  while (!ready) {
+    ready <- TRUE
+    
+    ## Flags
+    for (name in c("debug")) {
+      if (name %in% extras) {
+        pattern <- sprintf("^--%s$", name)
+        pos <- grep(pattern, args)
+        if (length(pos) > 0L) {
+          ## Special (enable debug as soon as possible)
+          if (name == "debug") {
+            debug <- TRUE
+            debug(TRUE)
+            logf("- debug mode: %s", sQuote(debug))
+          }
+          args <- args[-pos]
+          logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+          params[[name]] <- TRUE
+          ready <- FALSE
         }
-        args <- args[-pos]
-        logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-        params[[name]] <- TRUE
       }
     }
-  }
-  logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+    logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+  
+    
+    ## Key-value options
+    for (name in c("as", "config", "renviron")) {
+      if (name %in% extras) {
+        pattern <- sprintf("^--%s=(.*)$", name)
+        pos <- grep(pattern, args)
+        if (length(pos) > 0L) {
+          logf(" - detected --%s=<value>", name)
+          value <- gsub(pattern, "\\1", args[pos])
+          value <- value[length(value)]
+          logf("- --%s=%s", name, sQuote(value))
+          args <- args[-pos]
+          logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+          params[[name]] <- value
+          ready <- FALSE
 
-
-
-  ## Key-value options
-  for (name in c("as", "config", "renviron")) {
-    if (name %in% extras) {
-      pattern <- sprintf("^--%s=(.*)$", name)
-      pos <- grep(pattern, args)
-      if (length(pos) > 0L) {
-        logf(" - detected --%s=<value>", name)
-        value <- gsub(pattern, "\\1", args[pos])
-        value <- value[length(value)]
-        logf("- --%s=%s", name, sQuote(value))
-        args <- args[-pos]
-        logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-        params[[name]] <- value
+          ## Special: Process configuration file as soon as possible
+          if (name == "config") {
+            pathname <- value
+            logf(" - Reading config file: %s", sQuote(pathname))
+            config <- parse_config_dcf(pathname)
+            logp(config)
+          
+            ## Make sure assertions are met already now
+            config <- config_assert(config, envir = envir)
+            logf("- Assertions in configuration file %s fullfilled", sQuote(pathname))
+          
+            ## Set environment variables
+            if (length(config$env) > 0L) {
+              logf("- Setting environment variables per configuration file %s: %s",
+                   sQuote(pathname),
+                   paste(sQuote(names(config$env)), collapse = ", "))
+              do.call(Sys.setenv, args = config$env)
+            }
+          
+            ## Inject CLI options (giving priority to additional options)
+            logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+            logf(" - Injecting CLI options per configuration file %s: %s",
+                 sQuote(pathname),
+                 paste(sQuote(config$options), collapse = ", "))
+            logs(list(args = args, new = config$options, pos = pos))
+            if (pos == 1L) {
+              args <- c(config$options, args)
+            } else {
+              args <- insert(args, ats = pos - 1L, values = config$options)
+            }
+            
+            logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+          }
+        }
       }
     }
-  }
+  } ## while (!ready)
 
   custom <- any(!vapply(params, FUN = is.null, FUN.VALUE = TRUE))
   logf(" - custom: %s", custom)
 
-  ## No R CMD extras?
+  ## No custom R CMD <command> options?
   if (!custom) {
     if (unload) unload(debug = debug)
     return(invisible(FALSE))
@@ -142,43 +183,6 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   logf(" - stdin: %s", sQuote(stdin))
   log(" - str:")
   logs(sQuote(params))
-
-
-  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  ## Custom --config=<value>
-  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  ## Use a custom configuration file?
-  if (!is.null(params$config)) {
-    pathname <- params$config
-    logf(" - Reading config file: %s", sQuote(pathname))
-    config <- parse_config_dcf(pathname)
-    logp(config)
-
-    if (length(config$assert) > 0L) {
-      exprs <- parse(text = config$assert)
-      for (kk in seq_along(exprs)) {
-        expr <- exprs[[kk]]
-        res <- tryCatch(eval(expr, envir = envir), error = identity)
-        if (inherits(res, "error")) {
-          error("Evaluation of %s expression #%d resulted in an error: %s",
-                sQuote("assert"), kk, conditionMessage(res))
-        }
-        logs(list(expr = expr, res = res))
-        if (!is.logical(res) || length(res) != 1L || is.na(res)) {
-          error("Expression #%d (%s) of %s did not return TRUE or FALSE: %s",
-                kk, paste(deparse(expr), collapse = "; "), sQuote("assert"), paste(deparse(res), collapse = "; "))
-        }
-        if (!res) {
-          error("Cannot use configuration file (%s) because of unfullfilled assertion: %s", sQuote(pathname), paste(deparse(expr), collapse = "; "))
-        }
-      }
-    }
-    
-    if (length(config$env) > 0L) do.call(Sys.setenv, args = config$env)
-    args <- c(args, config$options)
-  }
-
-  logf(" - stdin: %s", paste(sQuote(stdin), collapse = " "))
 
 
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
