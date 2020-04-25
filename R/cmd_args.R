@@ -39,10 +39,9 @@ cmd_args_tarball <- function(args) {
 
 
 
-#' @importFrom R.utils commandArgs
 parse_command_args <- function(args) {
   ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
-  parsed_args <- commandArgs(asValues = TRUE, .args = c("", args))
+  parsed_args <- command_args(asValues = TRUE, .args = c("", args))
   is_empty <- vapply(parsed_args, FUN = identical, "", FUN.VALUE = FALSE)
   if (is.null(names(parsed_args))) {
     has_name <- rep(FALSE, times = length(parsed_args))

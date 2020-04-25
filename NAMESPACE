@@ -2,7 +2,8 @@
 
 export(is_debug_on)
 export(r_cmd_call)
-importFrom(R.utils,commandArgs)
+importFrom(methods,as)
 importFrom(utils,file_test)
 importFrom(utils,packageVersion)
 importFrom(utils,str)
+importFrom(utils,type.convert)

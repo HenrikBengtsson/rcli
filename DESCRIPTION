@@ -1,8 +1,8 @@
 Package: rcli
 Title: R Command-Line Interface Booster
 Imports:
-    utils,
-    R.utils
+    methods,
+    utils
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Henrik", family = "Bengtsson",
