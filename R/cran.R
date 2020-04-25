@@ -13,3 +13,6 @@ check_cran_ci <- function(args, stdin) {
   check_cran_default(args, stdin)
 }
 
+check_cran_newbie <- function(args, stdin) {
+  check_cran_default(args, stdin)
+}

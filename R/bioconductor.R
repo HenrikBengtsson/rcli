@@ -63,3 +63,8 @@ check_bioconductor_BiocCheck <- function(args, stdin) {
 
   list(args = args, stdin = stdin)
 }
+
+
+check_bioconductor_newbie <- function(args, stdin) {
+  check_bioconductor_BiocCheck(args, stdin)
+}
