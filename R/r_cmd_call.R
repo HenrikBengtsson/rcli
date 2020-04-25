@@ -63,45 +63,43 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   ## Check for custom R CMD <command> options
   params <- list(debug = NULL, as = NULL)
 
-  if ("debug" %in% extras) {
-    pattern <- "^--debug$"
-    pos <- grep(pattern, args)
-    if (length(pos) > 0L) {
-      value <- TRUE
-      logf("- debug mode: %s", sQuote(value))
-      args <- args[-pos]
-      logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-      params$debug <- debug <- value
-      debug(debug)
+
+  ## Flags
+  for (name in c("debug")) {
+    if (name %in% extras) {
+      pattern <- sprintf("^--%s$", name)
+      pos <- grep(pattern, args)
+      if (length(pos) > 0L) {
+        ## Special (enable debug as soon as possible)
+        if (name == "debug") {
+          debug <- TRUE
+          debug(TRUE)
+          logf("- debug mode: %s", sQuote(debug))
+        }
+        args <- args[-pos]
+        logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+        params[[name]] <- TRUE
+      }
     }
   }
   logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-  
-  if ("as" %in% extras) {
-    pattern <- "^--as=(.*)$"
-    pos <- grep(pattern, args)
-    if (length(pos) > 0L) {
-      logf(" - detected --as=<value>")
-      value <- gsub(pattern, "\\1", args[pos])
-      value <- value[length(value)]
-      logf("- --as=%s", sQuote(value))
-      args <- args[-pos]
-      logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-      params$as <- value
-    }
-  }
 
-  if ("renviron" %in% extras) {
-    pattern <- "^--renviron=(.*)$"
-    pos <- grep(pattern, args)
-    if (length(pos) > 0L) {
-      logf(" - detected --renviron=<value>")
-      value <- gsub(pattern, "\\1", args[pos])
-      value <- value[length(value)]
-      logf("- --renviron=%s", sQuote(value))
-      args <- args[-pos]
-      logf(" - args: %s", paste(sQuote(args), collapse = ", "))
-      params$renviron <- value
+
+
+  ## Key-value options
+  for (name in c("as", "renviron")) {
+    if (name %in% extras) {
+      pattern <- sprintf("^--%s=(.*)$", name)
+      pos <- grep(pattern, args)
+      if (length(pos) > 0L) {
+        logf(" - detected --%s=<value>", name)
+        value <- gsub(pattern, "\\1", args[pos])
+        value <- value[length(value)]
+        logf("- --%s=%s", name, sQuote(value))
+        args <- args[-pos]
+        logf(" - args: %s", paste(sQuote(args), collapse = ", "))
+        params[[name]] <- value
+      }
     }
   }
 
@@ -233,139 +231,4 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   if (unload) unload(debug = debug)
 
   invisible(TRUE)
-}
-
-
-## A good-enough approach to identify the tarball to be checked
-#' @importFrom utils file_test
-cmd_args_tarball <- function(args) {
-  error_if_not(is.list(args))
-  
-  if (length(args) == 0L) {
-    error("No more arguments to parse")
-  }
-
-  names <- names(args)
-  args <- args[nchar(names) == 0L]
-  if (length(args) == 0L) {
-    error("Did you forget to specify a package tarball file?")
-  }
-
-  is_string <- vapply(args, FUN = is.character, FUN.VALUE = FALSE)
-  args <- args[is_string]
-  if (length(args) == 0L) {
-    error("Did you forget to specify a package tarball file?")
-  }
-
-  args <- unlist(args, use.names = FALSE)
-  pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
-  tarball <- grep(pattern, args, value = TRUE)
-  if (length(tarball) == 0L) {
-    error("Did you forget to specify a package tarball file?")
-  } else if (length(tarball) > 1L) {
-    error("Found more than one package tarball file: %s",
-          paste(sQuote(tarball), collapse = ", "))
-  }
-  logf(" - tarball: %s", sQuote(tarball))
-  if (!file_test("-f", tarball)) {
-    error("Package tarball file does not exist: ", sQuote(tarball))
-  }
-  
-  tarball
-}
-
-
-
-
-#' @importFrom R.utils commandArgs
-parse_command_args <- function(args) {
-  ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
-  parsed_args <- commandArgs(asValues = TRUE, .args = c("", args))
-  is_empty <- vapply(parsed_args, FUN = identical, "", FUN.VALUE = FALSE)
-  if (is.null(names(parsed_args))) {
-    has_name <- rep(FALSE, times = length(parsed_args))
-  } else {
-    has_name <- nzchar(names(parsed_args))
-  }
-  parsed_args <- parsed_args[has_name | !is_empty]
-  
-  ## Find tarball, if it exists
-  if (length(parsed_args) > 0L) {
-    tarball <- unlist(parsed_args, use.names = FALSE)
-    pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
-    idxs <- grep(pattern, tarball)
-    if (length(idxs) > 0L) {
-      tarball <- tarball[idxs]
-      logf(" - tarball: %s", paste(sQuote(tarball), collapse = ", "))
-      if (length(tarball) > 1L) {
-        error("More than one package tarball specific: ", paste(sQuote(tarball), collapse = ", "))
-      }
-      if (!file_test("-f", tarball)) {
-        error("Package tarball file does not exist: ", sQuote(tarball))
-      }
-      ## Move tarball argument to the end
-      parsed_args[idxs] <- NULL
-      parsed_args$tarball <- tarball
-
-      ## Drop from non-parsed CLI args too
-      pattern <- "[.](tar[.]gz|tgz|tar[.]bz2|tar[.]xz)$"
-      idxs <- grep(pattern, args)
-      args <- c(args[-idxs], tarball)
-      
-      ## Sanity check
-#      logs(list(kk=2, parsed_args =parsed_args, args = args))
-#      error_if_not(length(parsed_args) == length(args))
-    }
-  }
-
-  ## Sanity check
-#  logs(list(kk=3, parsed_args =parsed_args, args = args))
-#  error_if_not(length(parsed_args) == length(args))
-
-  attr(parsed_args, "command_line_arguments") <- args
-  parsed_args
-}
-
-
-parse_check_as_option <- function(name, args = character(0L), ...) {
-  logs("parse_check_as_option() ...")
-  on.exit(logs("parse_check_as_option() ... done"), add = TRUE)
-  
-  register_by_packages(name)
-  db <- registry("as")
-
-  logf(" - registered check '--as' methods: %s", sQuote(names(db)))
-
-  fcn <- db[[name]]
-  if (is.null(fcn)) {
-    msg <- sprintf("Unknown R CMD %s value on --%s=%s. There are %d registered styles", "check", "as", sQuote(name), length(db))
-    if (length(db) > 0) {
-      msg <- sprintf("%s (%s)", msg, paste(sQuote(names(db)), collapse = ", "))
-    }
-    error(msg)
-  }
-
-  logf(" - identified '--as' methods: %s", sQuote(name))
-
-  parsed_args <- parse_command_args(args)
-  logs(list(parsed_args = parsed_args))
-  
-  logp(list(fcn = fcn))
-  tryCatch({
-    res <- fcn(args = parsed_args, ...)
-  }, error = function(ex) {
-    error("INTERNAL ERROR: ", conditionMessage(ex))
-  })
-  logs(list(res = res))
-  error_if_not(is.list(res$args) || is.character(res$args))
-  error_if_not(is.character(res$stdin))
-
-  ## Make sure that code is valid R code
-  expr <- tryCatch({
-    parse(text = res$stdin)
-  }, error = function(ex) {
-    error("INTERNAL ERROR: Syntax error: ", sQuote(res$stdin))
-  })
-  
-  res
 }
