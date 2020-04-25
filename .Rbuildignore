@@ -2,5 +2,5 @@
 ^OVERVIEW\.md$
 ^LICENSE\.md$
 ^Makefile$
-^.make/
-
+^.make
+^.github
