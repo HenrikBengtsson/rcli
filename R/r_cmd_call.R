@@ -275,51 +275,6 @@ cmd_args_tarball <- function(args) {
 }
 
 
-check_as_functions <- local({
-  db <- list()
-  
-  function(...) {
-    args <- list(...)
-
-    ## List registered check "as" functions
-    if (length(args) == 0L) return(db)
-
-    if (length(args) != 1L) stop("Maximum one argument can be specified")
-
-    arg <- args[[1]]
-    name <- names(args)[1]
-    if (is.character(arg)) {
-      res <- db[[arg]]
-      if (is.null(res)) stop("No such 'as' function: ", sQuote(arg))
-      return(res)
-    } else if (is.function(arg)) {
-      if (is.null(name)) stop("The function must be named")
-      db[[name]] <<- arg
-      return(invisible(db))
-    } else {
-      stop("Unknown type of argument: ", sQuote(typeof(arg)))
-    }
-  }
-})
-
-import_check_as_functions <- function(names) {
-  ## Load packages named 'rcli.addon.{as}' and '{as}', if they exists.
-  ## If {as} is of form {head}::{tail} or {head}-{tail}, then
-  ## {head} is used instead of {as} to load packages.
-  ## A rcli "addon" package should register their rcli addons when loaded.
-  for (name in names) {
-    name <- gsub("(::|-).*", "", name)
-    pkg <- sprintf("rcli.addon.%s", name)
-#    message("Trying to load: ", sQuote(pkg))
-    requireNamespace(pkg, quietly = TRUE)
-    pkg <- name
-#    message("Trying to load: ", sQuote(pkg))
-    requireNamespace(pkg, quietly = TRUE)
-#    message("Next ...")
-  }
-  
-  check_as_functions()
-}
 
 
 #' @importFrom R.utils commandArgs
@@ -376,7 +331,8 @@ parse_check_as_option <- function(name, args = character(0L), ...) {
   logs("parse_check_as_option() ...")
   on.exit(logs("parse_check_as_option() ... done"), add = TRUE)
   
-  db <- import_check_as_functions(name)
+  register_by_packages(name)
+  db <- registry("as")
 
   logf(" - registered check '--as' methods: %s", sQuote(names(db)))
 
