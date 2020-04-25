@@ -7,7 +7,12 @@ bioconductor_version <- function() {
   NULL
 }
 
-set_bioconductor <- function(version = bioconductor_version()) {
+set_bioconductor <- function(version = NULL) {
+  if (is.null(version)) {
+    version <- tryCatch(bioconductor_version(), error = function(ex) {
+      error("Failed to infer Bioconductor version: %s", conditionMessage(ex))
+    })
+  }
   bioc_version <- package_version(version)
   sprintf("bioc-%s", bioc_version)
 }

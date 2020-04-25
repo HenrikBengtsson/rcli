@@ -22,6 +22,7 @@ parse_check_as_option <- function(name, args = character(0L), ...) {
   logs(list(parsed_args = parsed_args))
   
   logp(list(fcn = fcn))
+  logf("- Calling custom 'as' function: %s", sQuote(name))
   tryCatch({
     res <- fcn(args = parsed_args, ...)
   }, error = function(ex) {
