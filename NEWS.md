@@ -1,6 +1,6 @@
 # Package: rcli
 
-## Version: 0.0.0-9000 [2019-04-24]
+## Version: 0.0.0-9000 [2019-04-25]
 
 ### New Features
 
@@ -18,3 +18,5 @@
    A built-in example is `R CMD check --as=rcli-test --help`.
 
  * Add --as=cran, which is equivalent to --as-cran.
+
+ * Add support for --config=<file.dcf>.

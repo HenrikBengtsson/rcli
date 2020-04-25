@@ -38,7 +38,7 @@
 #' @keywords internal
 #'
 #' @export
-r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
+r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
   R_CMD <- Sys.getenv("R_CMD")
 
   ## Nothing to do?
@@ -89,7 +89,7 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
 
 
   ## Key-value options
-  for (name in c("as", "renviron")) {
+  for (name in c("as", "config", "renviron")) {
     if (name %in% extras) {
       pattern <- sprintf("^--%s=(.*)$", name)
       pos <- grep(pattern, args)
@@ -142,6 +142,24 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   logf(" - stdin: %s", sQuote(stdin))
   log(" - str:")
   logs(sQuote(params))
+
+
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Custom --config=<value>
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Use a custom configuration file?
+  if (!is.null(params$config)) {
+    pathname <- params$config
+    logf(" - Reading config file: %s", sQuote(pathname))
+    config <- parse_config_dcf(pathname)
+    logp(config)
+    
+    if (length(config$env) > 0L) do.call(Sys.setenv, args = config$env)
+
+    args <- c(args, config$options)
+  }
+
+  logf(" - stdin: %s", paste(sQuote(stdin), collapse = " "))
 
 
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

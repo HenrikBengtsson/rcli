@@ -133,3 +133,35 @@ file_info <- function(f, type = "txt", extra = NULL) {
             prefix, nlines(f), file_size(f), extra)
   }
 }
+
+
+parse_config_dcf <- function(pathname) {
+  error_if_not(file_test("-f", pathname))
+  config <- suppressWarnings(read.dcf(pathname, all = TRUE))
+  config <- as.list(config)
+  config <- lapply(config, FUN = function(x) {
+    x <- x[!is.na(x)]
+    x <- strsplit(x, split = "\n", fixed = TRUE)
+    unlist(x)
+  })
+
+  if (length(config$env) > 0L) {
+    pattern <- "^([^=]+)=(.*)$"
+    invalid <- grep(pattern, config$env, invert = TRUE)
+    if (length(invalid) > 0L) {
+      error("SYNTAX ERROR: Unknown %s entry in configuration file %s: %s", sQuote("env"), sQuote(pathname), paste(sQuote(invalid), collapse = ", "))
+    }
+    envs <- list()
+    for (env in config$env) {
+      name <- gsub(pattern, "\\1", env)
+      value <- gsub(pattern, "\\2", env)
+      ## Trim surrounding quotes
+      value <- gsub('^["](.*)["]$', "\\1", value)
+      value <- gsub("^['](.*)[']$", "\\1", value)
+      envs[[name]] <- value
+    }
+    config$env <- envs
+  }
+  
+  config
+}
