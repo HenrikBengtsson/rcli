@@ -112,7 +112,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
           ## Special: Process configuration file as soon as possible
           if (name == "config") {
             pathname <- value
-            if (!silent) cat(sprintf("* using --config=%s\n", dQuote(pathname)))
+            if (!silent) cat(sprintf("* using --config=%s (%s)\n", dQuote(pathname), file_info(pathname, type = "txt")))
             logf(" - Reading config file: %s", sQuote(pathname))
             config <- parse_config_dcf(pathname)
             logp(config)
@@ -258,7 +258,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   
   pathname <- Sys.getenv("R_CHECK_ENVIRON", NA_character_)
   if (!silent && !is.na(pathname)) {
-    cat(sprintf("* using R_CHECK_ENVIRON=%s\n", dQuote(pathname)))
+    cat(sprintf("* using R_CHECK_ENVIRON=%s (%s)\n", dQuote(pathname), file_info(pathname, type = "env")))
     if (!file_test("-f", pathname)) {
       error("No such file: %s", sQuote(pathname))
     }

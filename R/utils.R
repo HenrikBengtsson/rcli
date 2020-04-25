@@ -96,40 +96,28 @@ nlines <- function(f) {
 }
 
 
-file_info <- function(f, type = "txt", extra = NULL) {
+file_info <- function(f, type = "txt") {
   if (!nzchar(f)) return(sQuote(""))
   fx <- path.expand(f)
-  if (length(extra) > 0L) {
-    extra <- paste("; ", extra, sep = "")
-  } else {
-    extra <- ""
-  }
   if (!is_file(f)) {
-    return(sprintf("%s (non-existing file%s)", sQuote(f), extra))
+    return(sprintf("non-existing file", sQuote(f)))
   }
 
-  if (fx == f) {
-    prefix <- sQuote(f)
-  } else {
-    prefix <- sprintf("%s => %s", sQuote(f), sQuote(fx))
-  }
   if (type == "binary") {
-    sprintf("%s (binary file; %d bytes%s)", prefix, file_size(f), extra)
+    sprintf("binary file; %d bytes", file_size(f))
   } else if (type == "env") {
     vars <- names(parse_renviron(f))
     nvars <- length(vars)
     if (nvars > 0) {
-      vars <- sprintf(" (%s)", paste(sQuote(vars), collapse = ", "))
+      vars <- paste(sQuote(vars), collapse = ", ")
     } else {
       vars <- ""
     }
-    sprintf("%s (%d lines; %d bytes%s) setting %d environment variables%s",
-            prefix, nlines(f), file_size(f), extra, nvars, vars)
+    sprintf("%d lines; %d bytes setting %d environment variables%s",
+            nlines(f), file_size(f), nvars, vars)
   } else if (type == "r") {
-    sprintf("%s (%d code lines; %d bytes%s)",
-            prefix, nlines(f), file_size(f), extra)
+    sprintf("%d code lines; %d bytes", nlines(f), file_size(f))
   } else {
-    sprintf("%s (%d lines; %d bytes%s)",
-            prefix, nlines(f), file_size(f), extra)
+    sprintf("%d lines; %d bytes", nlines(f), file_size(f))
   }
 }
