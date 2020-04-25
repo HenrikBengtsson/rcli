@@ -60,9 +60,11 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   args <- args[nzchar(args)]
   logf(" - args: %s", paste(sQuote(args), collapse = ", "))
 
-  ## Check for custom R CMD <command> options
-  params <- list(debug = NULL, as = NULL)
 
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Check for custom R CMD <command> options
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  params <- list(debug = NULL, as = NULL)
 
   ## Flags
   for (name in c("debug")) {
@@ -112,11 +114,13 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
     return(invisible(FALSE))
   }
 
+
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Identify which R CMD <command> was called
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   command <- NULL
   stdin <- NULL
   silent <- FALSE
-  prologue <- list()
-  epilogue <- list()
   
   ## Then we need to infer what <command> is in use
   stdin <- getOption("rcli.debug.stdin", readLines(stdin(), warn = FALSE))
@@ -139,6 +143,10 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   log(" - str:")
   logs(sQuote(params))
 
+
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Custom --as=<value>
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   ## Use a custom check as?
   if (!is.null(params$as)) {
     if (command == "check") {
@@ -153,7 +161,10 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
 
   logf(" - stdin: %s", paste(sQuote(stdin), collapse = " "))
 
-  ## Use a custom build/check Renviron file?
+
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Custom build/check Renviron file
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if (!is.null(params$renviron)) {
     if (command %in% c("build", "check")) {
       env <- sprintf("R_%s_ENVIRON", toupper(command))
@@ -180,54 +191,56 @@ r_cmd_call <- function(extras = c("debug", "as", "renviron"), args = commandArgs
   }
 
 
-  ## If we intercepted the standard input, then treat it as code and
-  ## evaluate it here
-  if (!is.null(stdin)) {
-    logf("Tweaked R CMD %s:", command)
-    logf(" - call: %s", sQuote(paste(stdin, collapse = " ")))
-    expr <- parse(text = stdin)
-    logf(" - args: %s", paste(sQuote(unlist(args)), collapse = ", "))
-    assign("args", args, envir = envir, inherits = FALSE)
-    on.exit(rm(list = "args", envir = envir, inherits = FALSE), add = TRUE)
-
-    if (!silent && !is.null(params$as)) {
-      cat(sprintf("* using --as=%s\n", params$as))
-    }
-    
-    pathname <- Sys.getenv("R_CHECK_ENVIRON", NA_character_)
-    if (!silent && !is.na(pathname)) {
-      cat(sprintf("* using R_CHECK_ENVIRON=%s\n", dQuote(pathname)))
-      if (!file_test("-f", pathname)) {
-        error("No such file: %s", sQuote(pathname))
-      }
-    }
-
-    local({
-      opwd <- getwd()
-      logf("Working directory: %s", sQuote(opwd))
-      on.exit(setwd(opwd))
-      logf("Expression: %s", paste(deparse(expr), collapse = " "))
-      if (!dryrun) {
-        tryCatch({
-          res <- eval(expr, envir = envir)
-        }, error = function(ex) {
-          error("INTERNAL ERROR: %s", conditionMessage(ex))
-        })
-      }
-      logf("Results: %s", paste(sQuote(res), collapse = ", "))
-    })
-    
-    if (length(epilogue) > 0L) {
-      for (name in names(epilogue)) {
-        cat(sprintf("* Epilogue '%s'\n", name))
-        code <- epilogue[[name]]
-        cat(sprintf("  - %s\n", code))
-        expr <- parse(text = code)
-        if (!dryrun) eval(expr, envir = envir)
-      }
-    }
+  ## If possible, do an early return and let the active R CMD <command>
+  ## take over from here
+  if (is.null(stdin)) {
+    if (unload) unload(debug = debug)
+    return(invisible(TRUE))
   }
 
+
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Process custom features
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## If we intercepted the standard input, then treat it as code and
+  ## evaluate it here
+  logf("Tweaked R CMD %s:", command)
+  logf(" - call: %s", sQuote(paste(stdin, collapse = " ")))
+  expr <- parse(text = stdin)
+  logf(" - args: %s", paste(sQuote(unlist(args)), collapse = ", "))
+  assign("args", args, envir = envir, inherits = FALSE)
+  on.exit(rm(list = "args", envir = envir, inherits = FALSE), add = TRUE)
+  if (!silent && !is.null(params$as)) {
+    cat(sprintf("* using --as=%s\n", params$as))
+  }
+  
+  pathname <- Sys.getenv("R_CHECK_ENVIRON", NA_character_)
+  if (!silent && !is.na(pathname)) {
+    cat(sprintf("* using R_CHECK_ENVIRON=%s\n", dQuote(pathname)))
+    if (!file_test("-f", pathname)) {
+      error("No such file: %s", sQuote(pathname))
+    }
+  }
+  
+  local({
+    opwd <- getwd()
+    logf("Working directory: %s", sQuote(opwd))
+    on.exit(setwd(opwd))
+    logf("Expression: %s", paste(deparse(expr), collapse = " "))
+    if (!dryrun) {
+      tryCatch({
+        res <- eval(expr, envir = envir)
+      }, error = function(ex) {
+        error("INTERNAL ERROR: %s", conditionMessage(ex))
+      })
+    }
+    logf("Results: %s", paste(sQuote(res), collapse = ", "))
+  })
+  
+
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  ## Cleanup
+  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if (unload) unload(debug = debug)
 
   invisible(TRUE)
