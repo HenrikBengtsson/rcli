@@ -30,7 +30,7 @@ cmd_args_tarball <- function(args) {
   }
   logf(" - tarball: %s", sQuote(tarball))
   if (!file_test("-f", tarball)) {
-    error("Package tarball file does not exist: ", sQuote(tarball))
+    error("Package tarball file does not exist: %s", sQuote(tarball))
   }
   
   tarball
@@ -62,7 +62,7 @@ parse_command_args <- function(args) {
         error("More than one package tarball specific: ", paste(sQuote(tarball), collapse = ", "))
       }
       if (!file_test("-f", tarball)) {
-        error("Package tarball file does not exist: ", sQuote(tarball))
+        error("Package tarball file does not exist: %s", sQuote(tarball))
       }
       ## Move tarball argument to the end
       parsed_args[idxs] <- NULL
