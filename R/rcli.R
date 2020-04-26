@@ -1,5 +1,5 @@
 rcli_help <- function() {
-  cat("rcli: Demo of the R Command-Line Interface Booster\n")
+  cat("rcli: Demo of the R Command-Line Interface Extra Package\n")
   cat("\n")
   cat("Usage:\n")
   cat(" R CMD check --as=rcli <options>\n")

@@ -1,10 +1,13 @@
-# rcli: R Command-Line Interface Booster
+# rcli: R Command-Line Interface Extras
 
 ![Life cycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
 
+The **[rcli]** package boosts `R CMD check` with extra options.  For example, `R CMD check --config=check.dcf pkg_1.0.tar.gz` checks the package tarball with additional command-line options and environment variables as given by the 'check.dcf' file.  Another example is `R CMD check --as=bioconductor pkg_1.0.tar.gz`, which checks the package according to Bioconductor settings.
+
+
 ## One-time setup
 
-After installing the **[rcli]** package (see below), call
+After installing the **rcli** package (see below), call
 
 ```r
 > rcli::install()
@@ -16,8 +19,9 @@ Validated that 'R CMD check --as=<style>' works
 to activate the **rcli** addons.  To see it for yourself, call the following from the command line:
 
 ```sh
-$ R CMD check --as=rcli-test
-* using --as=rcli-test
+$ R CMD check --as=rcli --hello
+* using --as=rcli
+Hello world!
 $ 
 ```
 
@@ -79,13 +83,6 @@ R package rcli is only available via [GitHub](https://github.com/HenrikBengtsson
 remotes::install_github("HenrikBengtsson/rcli")
 ```
 
-### Pre-release version
-
-To install the pre-release version that is available in Git branch `develop` on GitHub, use:
-```r
-remotes::install_github("HenrikBengtsson/rcli@develop")
-```
-This will install the package from source.  
 
 
 

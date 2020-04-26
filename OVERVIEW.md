@@ -1,8 +1,11 @@
 ![Life cycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
 
+The **[rcli]** package boosts `R CMD check` with extra options.  For example, `R CMD check --config=check.dcf pkg_1.0.tar.gz` checks the package tarball with additional command-line options and environment variables as given by the 'check.dcf' file.  Another example is `R CMD check --as=bioconductor pkg_1.0.tar.gz`, which checks the package according to Bioconductor settings.
+
+
 ## One-time setup
 
-After installing the **[rcli]** package (see below), call
+After installing the **rcli** package (see below), call
 
 ```r
 > rcli::install()
