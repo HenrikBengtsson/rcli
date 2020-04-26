@@ -101,3 +101,11 @@ temp_Renviron <- function(what = c("build", "check"), envs) {
 
   pathname
 }
+
+
+use_Renviron <- function(what = c("build", "check"), envs) {
+  if (length(envs) == 0L) return()
+  pathname <- temp_Renviron("check", envs = envs)
+  logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
+  Sys.setenv(R_CHECK_ENVIRON = pathname)
+}
