@@ -17,13 +17,11 @@
 #'
 #' @return (logical; invisible) TRUE or FALSE.
 #'
-#' @section Installation & Usage:
-#' This function should called at the end of the \file{Rprofile} startup file.
-#' For example, append:
+#' @section Installation:
+#' This function should be called at the end of the \file{Rprofile} startup
+#' file.  You can use `rcli::install()` to automatically append:
 #' ```r
-#' if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) {
-#'   rcli::r_cmd_call()
-#' }
+#' if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) rcli::r_cmd_call()
 #' ```
 #' to your \file{~/.Rprofile} file.
 #'

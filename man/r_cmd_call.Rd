@@ -35,12 +35,10 @@ internally by the \verb{R CMD} call.}
 \description{
 \emph{(EXPERIMENTAL)} Performs a tweaked 'R CMD' call
 }
-\section{Installation & Usage}{
+\section{Installation}{
 
-This function should called at the end of the \file{Rprofile} startup file.
-For example, append:\if{html}{\out{<div class="r">}}\preformatted{if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) \{
-  rcli::r_cmd_call()
-\}
+This function should be called at the end of the \file{Rprofile} startup
+file.  You can use \code{rcli::install()} to automatically append:\if{html}{\out{<div class="r">}}\preformatted{if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) rcli::r_cmd_call()
 }\if{html}{\out{</div>}}
 
 to your \file{~/.Rprofile} file.

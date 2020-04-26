@@ -4,6 +4,19 @@
 
 ### New Features
 
+ * Add rcli::install() and rcli::uninstall().
+ 
+ * Add support for --config=<file.dcf>.
+ 
+ * Add --as=bioconductor for testing according to Bioconductor.
+
+ * Add --as=cran, which is equivalent to --as-cran.
+ 
+ * Package now supports `R CMD check --as={style}`. If `{style}` is not a
+   built-in style, then the package **rcli.addon.{style}** is loaded if it
+   is available, which should then register a corresponding "as" function.
+   A built-in example is `R CMD check --as=rcli-test --help`.
+
  * Add `r_cmd_call()`.
 
  * Add support for `R CMD build --renviron={name}`, which sets
@@ -11,12 +24,3 @@
 
  * Add support for `R CMD check --renviron={name}`, which sets
    `R_CHECK_ENVIRON=~/.R/{name}.check.Renviron`.
-
- * Package now supports `R CMD check --as={style}`. If `{style}` is not a
-   built-in style, then the package **rcli.addon.{style}** is loaded if it
-   is available, which should then register a corresponding "as" function.
-   A built-in example is `R CMD check --as=rcli-test --help`.
-
- * Add --as=cran, which is equivalent to --as-cran.
-
- * Add support for --config=<file.dcf>.

@@ -4,12 +4,16 @@
 
 ## One-time setup
 
-After installing the **[rcli]** package (see below), add the following to the end of your `~/.Rprofile` startup file:
+After installing the **[rcli]** package (see below), call
+
+```r
+> rcli::install()
+```
+
+to append the following to the end of your `~/.Rprofile` startup file (created if missing):
 
 ```sh
-if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) {
-  rcli::r_cmd_call()
-}
+if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) rcli::r_cmd_call()
 ```
 
 Validate that you get the following output:
