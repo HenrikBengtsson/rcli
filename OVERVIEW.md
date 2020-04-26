@@ -14,8 +14,9 @@ Validated that 'R CMD check --as=<style>' works
 to activate the **rcli** addons.  To see it for yourself, call the following from the command line:
 
 ```sh
-$ R CMD check --as=rcli-test
-* using --as=rcli-test
+$ R CMD check --as=rcli --hello
+* using --as=rcli
+Hello world!
 $ 
 ```
 

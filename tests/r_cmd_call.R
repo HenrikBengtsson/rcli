@@ -7,7 +7,7 @@ options(
 )
 
 bfr0 <- utils::capture.output({
-  rcli:::rcli_test_help()
+  rcli:::rcli_help()
 })
 cat(bfr0, sep = "\n")
 
@@ -17,7 +17,7 @@ bfr <- utils::capture.output({
 })
 print(res)
 cat(bfr, sep = "\n")
-bfr <- grep("* using --as=rcli-test", bfr, invert = TRUE, value = TRUE)
+bfr <- grep("* using --as=rcli", bfr, invert = TRUE, value = TRUE)
 stopifnot(all(bfr == bfr0))
 
 options(
