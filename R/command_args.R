@@ -254,11 +254,12 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
     for (ii in seq_len(nargsT)) {
       argI <- argsT[[ii]]
       arg <- argI$arg
-##      printf("Argument #%d: '%s' [n=%d]\n", ii, arg, length(arg))
+#      cat(sprintf("Argument #%d: '%s' [n=%d]\n", ii, arg, length(arg)))
 
       if (length(arg) == 2L) {
         argsT[[ii]]$key <- gsub("^[-]*", "", arg[1L])
         argsT[[ii]]$value <- arg[2L]
+#        utils::str(list("1", argsT_ii = argsT[[ii]]))
         next
       }
 
@@ -274,6 +275,7 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
         if (what == ":=") class(value) <- c("CmdArgExpression")
         argsT[[ii]]$key <- key
         argsT[[ii]]$value <- value
+#        utils::str(list("2", argsT_ii = argsT[[ii]]))
         next
       }
 
@@ -282,6 +284,7 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
       if (regexpr(pattern, arg) != -1L) {
         key <- gsub(pattern, "\\1", arg)
         argsT[[ii]]$key <- key
+#        utils::str(list("3", argsT_ii = argsT[[ii]]))
         next
       }
 
@@ -294,6 +297,7 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
         if (what == ":=") class(value) <- c("CmdArgExpression")
         argsT[[ii]]$key <- key
         argsT[[ii]]$value <- value
+#        utils::str(list("4", argsT_ii = argsT[[ii]]))
         next
       }
 
@@ -302,6 +306,7 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
       if (regexpr(pattern, arg) != -1L) {
         key <- gsub(pattern, "\\1", arg)
         argsT[[ii]]$key <- key
+#        utils::str(list("5", argsT_ii = argsT[[ii]]))
         next
       }
 
@@ -314,11 +319,14 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
         if (what == ":=") class(value) <- c("CmdArgExpression")
         argsT[[ii]]$key <- key
         argsT[[ii]]$value <- value
+#        utils::str(list("6", argsT_ii = argsT[[ii]]))
         next
       }
 
       argsT[[ii]]$value <- arg
     } # for (ii ...)
+
+#    utils::str(list(argsT = argsT))
 
 
     # Rescue missing values
@@ -336,22 +344,27 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
            if (is.null(key)) {
               argsT[[ii]]$key <- value
               argsT[[ii]]$value <- NA_character_
+#           utils::str(list("6", argsT_ii = argsT[[ii]]))
            }
            next
         }
 
         # Missing value - can we rescue it?
-        nextKey <- argsT[[ii+1L]]$key
-        nextValue <- argsT[[ii+1L]]$value
-        if (is.null(nextKey)) {
-           # Definitely!
-           argsT[[ii]]$value <- nextValue
-           argsT[[ii+1L]] <- list(); # Drop next
-           next
+        if (!is.null(key) && grepl("^--", key)) {
+          nextKey <- argsT[[ii+1L]]$key
+          nextValue <- argsT[[ii+1L]]$value
+          if (is.null(nextKey)) {
+             # Definitely!
+             argsT[[ii]]$value <- nextValue
+             argsT[[ii+1L]] <- list(); # Drop next
+#             utils::str(list("7", argsT_ii = argsT[[ii]]))
+             next
+          }
         }
 
         # Otherwise, interpret as a flag
         argsT[[ii]]$value <- TRUE
+#           utils::str(list("8", argsT_ii = argsT[[ii]]))
       } # for (ii ...)
 
       # Special case: Rescue missing value in argsT[[<last>]]?
@@ -359,6 +372,8 @@ command_args <- function(trailingOnly=FALSE, asValues=FALSE, defaults=NULL, alwa
       if (length(argT) > 0L && is.null(argT$value)) {
         argsT[[nargsT]]$value <- TRUE
       }
+
+#    utils::str(list("B", argsT = argsT))
 
       # Drop empty
       keep <- (sapply(argsT, FUN=length) > 0L)
