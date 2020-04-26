@@ -49,10 +49,10 @@ $ R CMD check --as=bioconductor::BiocCheck --help
 ### Customized checking
 
 ```sh
-$ R CMD check --config=~/.R/my_bioc_check.dcf pkg_1.0.tar.gz
+$ R CMD check --config=~/.R/my_bioc-3.11_check.dcf pkg_1.0.tar.gz
 ```
 
-where `~/.R/my_bioc_check.dcf` may look like:
+where `~/.R/my_bioc-3.11_check.dcf` may look like:
 
 ```
 assert:
