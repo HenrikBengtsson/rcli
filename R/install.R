@@ -16,7 +16,9 @@
 #' @param quiet If `FALSE` (default), detailed messages are generated,
 #' otherwise not.
 #'
-#' @return The pathname of the R startup file modified.
+#' @param validate If `TRUE` (default), the installation is validated.
+#'
+#' @return (invisible) The pathname of the R startup file modified.
 #'
 #' @describeIn install injects
 #' ```r
@@ -26,7 +28,7 @@
 #'
 #' @export
 install <- function(path = "~", backup = TRUE, overwrite = FALSE,
-                    quiet = FALSE) {
+                    quiet = FALSE, validate = TRUE) {
   if (quiet) notef <- function(...) NULL
 
   file <- file.path(path, ".Rprofile")
@@ -56,7 +58,9 @@ install <- function(path = "~", backup = TRUE, overwrite = FALSE,
           sQuote(file))
   }
 
-  file
+  if (validate) validate()
+
+  invisible(file)
 }
 
 
@@ -87,7 +91,7 @@ uninstall <- function(path = "~", backup = TRUE, quiet = FALSE) {
   writeLines(bfr2, con = file)
   notef("R startup file updated: %s", sQuote(file))
 
-  file
+  invisible(file)
 }
 
 
@@ -99,4 +103,24 @@ is_installed <- function(file = file.path("~", ".Rprofile")) {
   res <- any(grepl(pattern, bfr))
   attr(res, "file") <- file
   res
+}
+
+#' @rdname install
+#' @importFrom utils file_test
+#' @export
+validate <- function() {
+  R_bin <- file.path(R.home("bin"), "R")
+  stop_if_not(file_test("-x", R_bin))
+  args <- c("CMD", "check", "--as=rcli-test")
+  output <- system2(R_bin, args = args, stdout = TRUE)
+  status <- attr(output, "status")
+  if (!is.null(status) && status != 0L) {
+    stop("rcli::r_cmd_call() is not properly installed in .Rprofile. 'R CMD check --as=rcli-test' terminated with a non-zero exit code")
+  }
+  expect <- "* using --as=rcli-test"
+  if (!any(grepl(expect, output, fixed = TRUE))) {
+    stop(sprintf("rcli::r_cmd_call() is not properly installed in .Rprofile. 'R CMD check --as=rcli-test' did not output the string %s", sQuote(expect)))
+  }
+  message("Validated that 'R CMD check --as=<style>' works")
+  invisible(TRUE)
 }

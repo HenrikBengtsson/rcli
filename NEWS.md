@@ -4,7 +4,7 @@
 
 ### New Features
 
- * Add rcli::install() and rcli::uninstall().
+ * Add rcli::install(), rcli::uninstall(), and rcli::validate().
  
  * Add support for --config=<file.dcf>.
  

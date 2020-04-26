@@ -3,11 +3,20 @@
 \name{install}
 \alias{install}
 \alias{uninstall}
+\alias{validate}
 \title{Install and uninstall 'rcli' to the R startup process}
 \usage{
-install(path = "~", backup = TRUE, overwrite = FALSE, quiet = FALSE)
+install(
+  path = "~",
+  backup = TRUE,
+  overwrite = FALSE,
+  quiet = FALSE,
+  validate = TRUE
+)
 
 uninstall(path = "~", backup = TRUE, quiet = FALSE)
+
+validate()
 }
 \arguments{
 \item{path}{The path where to create / update the \file{.Rprofile} file.}
@@ -22,9 +31,11 @@ any pre-existing R startup file is overwritten.}
 
 \item{quiet}{If \code{FALSE} (default), detailed messages are generated,
 otherwise not.}
+
+\item{validate}{If \code{TRUE} (default), the installation is validated.}
 }
 \value{
-The pathname of the R startup file modified.
+(invisible) The pathname of the R startup file modified.
 }
 \description{
 Install and uninstall 'rcli' by appending / removing one line of code to

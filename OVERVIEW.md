@@ -6,15 +6,12 @@ After installing the **[rcli]** package (see below), call
 
 ```r
 > rcli::install()
+Backed up R startup file: '~/.Rprofile' (316 bytes) -> '~/.Rprofile.bak.20200425-210609' (316 bytes)
+Added 'rcli::r_cmd_call()' to already existing R startup file: '~/.Rprofile'
+Validated that 'R CMD check --as=<style>' works
 ```
 
-to append the following to the end of your `~/.Rprofile` startup file (created if missing):
-
-```sh
-if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) rcli::r_cmd_call()
-```
-
-Validate that you get the following output:
+to activate the **rcli** addons.  To see it for yourself, call the following from the command line:
 
 ```sh
 $ R CMD check --as=rcli-test
