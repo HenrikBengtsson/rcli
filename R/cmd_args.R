@@ -86,3 +86,13 @@ parse_command_args <- function(args) {
   attr(parsed_args, "command_line_arguments") <- args
   parsed_args
 }
+
+
+
+consume_arg <- function(parsed_args, name) {
+  args <- attr(parsed_args, "command_line_arguments")
+  parsed_args[[name]] <- NULL
+  args <- grep(sprintf("^--%s(=.*|)$", name), args, invert = TRUE, value = TRUE)
+  attr(parsed_args, "command_line_arguments") <- args
+  parsed_args
+}
