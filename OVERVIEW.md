@@ -1,6 +1,6 @@
 ![Life cycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
 
-## One-time Setup
+## One-time setup
 
 After installing the **[rcli]** package (see below), add the following to the end of your `~/.Rprofile` startup file:
 
