@@ -1,3 +1,5 @@
+SHELL=bash
+
 include .make/Makefile
 
 vignettes/startup-intro.md: OVERVIEW.md vignettes/incl/clean.css
@@ -6,3 +8,17 @@ vignettes/startup-intro.md: OVERVIEW.md vignettes/incl/clean.css
 	cat $< >> $@
 
 vigs: vignettes/startup-intro.md
+
+
+bioc-update: inst/bioc-3.11 inst/bioc-3.12
+
+inst/bioc-%: FORCE
+	mkdir -p "$@"
+	bioc_version=$(@F); \
+	bioc_version=$${bioc_version/bioc-/}; \
+	echo "bioc_version=$$bioc_version"; \
+	cd "$@"; \
+	curl -L -o check.Renviron https://raw.githubusercontent.com/Bioconductor/BBS/master/$$bioc_version/Renviron.bioc
+	ls -l "$@"
+
+FORCE:

@@ -1,6 +1,6 @@
 .onLoad <- function(libname, pkgname) {
   ## Register 'R CMD check' flavors
-  register_as("rcli-test" = check_rcli_test)
+  register_as("rcli" = check_rcli)
   
   register_as("cran"          = check_cran_default)
   register_as("cran::default" = check_cran_default)

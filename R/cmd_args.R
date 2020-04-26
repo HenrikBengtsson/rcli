@@ -30,7 +30,7 @@ cmd_args_tarball <- function(args) {
   }
   logf(" - tarball: %s", sQuote(tarball))
   if (!file_test("-f", tarball)) {
-    error("Package tarball file does not exist: ", sQuote(tarball))
+    error("Package tarball file does not exist: %s", sQuote(tarball))
   }
   
   tarball
@@ -39,10 +39,9 @@ cmd_args_tarball <- function(args) {
 
 
 
-#' @importFrom R.utils commandArgs
 parse_command_args <- function(args) {
   ## WORKAROUND/FIXME: Need a dummy argument /HB 2020-04-21
-  parsed_args <- commandArgs(asValues = TRUE, .args = c("", args))
+  parsed_args <- command_args(asValues = TRUE, .args = c("", args))
   is_empty <- vapply(parsed_args, FUN = identical, "", FUN.VALUE = FALSE)
   if (is.null(names(parsed_args))) {
     has_name <- rep(FALSE, times = length(parsed_args))
@@ -63,7 +62,7 @@ parse_command_args <- function(args) {
         error("More than one package tarball specific: ", paste(sQuote(tarball), collapse = ", "))
       }
       if (!file_test("-f", tarball)) {
-        error("Package tarball file does not exist: ", sQuote(tarball))
+        error("Package tarball file does not exist: %s", sQuote(tarball))
       }
       ## Move tarball argument to the end
       parsed_args[idxs] <- NULL

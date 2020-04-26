@@ -1,29 +1,29 @@
 #' @importFrom utils packageVersion
-bioconductor_version <- function() {
-  v <- Sys.getenv("R_BIOC_VERSION")
-  if (nzchar(v)) {
-    v <- package_version(v)
-    attr(v, "source") <- "R_BIOC_VERSION"   
-    logf("- R_BIOC_VERSION=%s", v)
+bioconductor_version <- function(must_work = TRUE) {
+  v <- tryCatch(packageVersion("BiocVersion")[,1:2], error = function(e) NULL)
+  if (!is.null(v)) {
+    attr(v, "source") <- "BiocVersion"   
+    logf("- BiocVersion v%s.*", v)
   } else {
-    v <- tryCatch(packageVersion("BiocVersion")[,1:2], error = function(e) NULL)
-    if (!is.null(v)) {
-      attr(v, "source") <- "BiocVersion"   
-      logf("- BiocVersion v%s.*", v)
+    v <- Sys.getenv("R_BIOC_VERSION")
+    if (nzchar(v)) {
+      v <- package_version(v)
+      attr(v, "source") <- "R_BIOC_VERSION"   
+      logf("- R_BIOC_VERSION=%s", v)
+    } else {
+      v <- NULL
     }
   }
+  if (is.null(v) && must_work) {
+    error("Bioconductor version is unknown. Make sure 'BiocVersion' is installed or 'R_BIOC_VERSION' is set")
+  }
+  cat(sprintf("* using Bioconductor version: %s (per %s)\n", v, attr(v, "source")))
   v
 }
 
 set_bioconductor <- function(version = NULL) {
-  if (is.null(version)) {
-    version <- tryCatch(bioconductor_version(), error = function(ex) {
-      error("Failed to infer Bioconductor version: %s", conditionMessage(ex))
-    })
-  }
-  bioc_version <- version
-  cat(sprintf("* using Bioconductor version: %s (per %s)\n", bioc_version, attr(bioc_version, "source")))
-  sprintf("bioc-%s", bioc_version)
+  if (is.null(version)) version <- bioconductor_version()
+  sprintf("bioc-%s", version)
 }
 
 check_bioconductor_help <- function() {
@@ -36,13 +36,18 @@ check_bioconductor_help <- function() {
 
 
 check_bioconductor_default <- function(args, stdin) {
-  pathname <- get_Renviron("check", set = set_bioconductor())
-  if (is.null(pathname)) {
-    error("Failed to located Renviron file for Bioconductor version %s: %s", bioconductor_version(), sQuote(pathname))
+  version <- bioconductor_version()
+  if (version <= "3.10") {
+    cat("* using regular 'R CMD check' since Bioconductor (<= 3.10) does not use customized testing\n")
+  } else {
+    pathname <- find_Renviron("check", set = set_bioconductor(version))
+    if (is.null(pathname)) {
+      error("Failed to located Renviron file for Bioconductor version %s: %s", version, sQuote(pathname))
+    }
+  
+    logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
+    Sys.setenv(R_CHECK_ENVIRON = pathname)
   }
-
-  logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
-  Sys.setenv(R_CHECK_ENVIRON = pathname)
 
   args <- attr(args, "command_line_arguments")
   
@@ -52,7 +57,7 @@ check_bioconductor_default <- function(args, stdin) {
 check_bioconductor_BiocCheck <- function(args, stdin) {
   if (isTRUE(args$help)) return(check_bioconductor_help())
 
-  pathname <- get_Renviron("check", set = set_bioconductor())
+  pathname <- find_Renviron("check", set = set_bioconductor())
   if (!is.null(pathname)) {
     logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
     Sys.setenv(R_CHECK_ENVIRON = pathname)

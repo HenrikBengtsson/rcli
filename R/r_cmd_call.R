@@ -17,13 +17,11 @@
 #'
 #' @return (logical; invisible) TRUE or FALSE.
 #'
-#' @section Installation & Usage:
-#' This function should called at the end of the \file{Rprofile} startup file.
-#' For example, append:
+#' @section Installation:
+#' This function should be called at the end of the \file{Rprofile} startup
+#' file.  You can use `rcli::install()` to automatically append:
 #' ```r
-#' if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) {
-#'   rcli::r_cmd_call()
-#' }
+#' if (nzchar(Sys.getenv("R_CMD")) && require("rcli", quietly=TRUE)) rcli::r_cmd_call()
 #' ```
 #' to your \file{~/.Rprofile} file.
 #'
@@ -37,14 +35,18 @@
 #'
 #' @keywords internal
 #'
-#' @importFrom R.utils insert
 #' @export
 r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
+  if (unload) on.exit(unload())
+  
+  ## Prevent this function from being called twice in the same session
+  if (nzchar(Sys.getenv("R_RCLI_CALLED"))) return(invisible(FALSE))
+  Sys.setenv(R_RCLI_CALLED = "TRUE")
+  
   R_CMD <- Sys.getenv("R_CMD")
 
   ## Nothing to do?
   if (!nzchar(R_CMD) || length(args) == 0L || length(extras) == 0L) {
-    if (unload) unload()
     return(invisible(FALSE))
   }
 
@@ -137,10 +139,11 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
                  sQuote(pathname),
                  paste(sQuote(config$options), collapse = ", "))
             logs(list(args = args, new = config$options, pos = pos))
-            if (pos == 1L) {
-              args <- c(config$options, args)
-            } else {
-              args <- insert(args, ats = pos - 1L, values = config$options)
+            
+            if (length(config$options) > 0L) {
+              head <- seq_len(pos - 1L)
+              tail <- setdiff(seq_along(args), head)
+              args <- c(args[head], config$options, args[tail])
             }
             
             logf(" - args: %s", paste(sQuote(args), collapse = ", "))
@@ -154,10 +157,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   logf(" - custom: %s", custom)
 
   ## No custom R CMD <command> options?
-  if (!custom) {
-    if (unload) unload(debug = debug)
-    return(invisible(FALSE))
-  }
+  if (!custom) return(invisible(FALSE))
 
 
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -239,10 +239,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
 
   ## If possible, do an early return and let the active R CMD <command>
   ## take over from here
-  if (is.null(stdin)) {
-    if (unload) unload(debug = debug)
-    return(invisible(TRUE))
-  }
+  if (is.null(stdin)) return(invisible(TRUE))
 
 
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -280,11 +277,6 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
     logf("Results: %s", paste(sQuote(res), collapse = ", "))
   })
   
-
-  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  ## Cleanup
-  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  if (unload) unload(debug = debug)
 
   invisible(TRUE)
 }

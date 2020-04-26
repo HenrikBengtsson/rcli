@@ -1,18 +1,7 @@
 #' @importFrom utils file_test
-get_Renviron <- function(what = c("build", "check"), set, package = .packageName, must_exist = FALSE) {
+find_Renviron <- function(what = c("build", "check"), set, package = .packageName, must_exist = FALSE) {
   what <- match.arg(what)
   error_if_not(is.character(set), length(set) == 1L, !is.na(set))
-
-  path <- file.path(system.file(package = package), set)
-  if (!file_test("-d", path)) {
-    msg <- sprintf("No such %s Renviron folder for %s: %s",
-                   sQuote(what), sQuote(set), sQuote(path))
-    logf("- %s", msg)
-    if (must_exist) error(msg)
-    return(NULL)
-  }
-  logf("- Folder for %s Renviron set %s: %s",
-       sQuote(what), sQuote(set), sQuote(path))
 
   if (what == "build") {
     env <- "R_BUILD_ENVIRON"
@@ -26,12 +15,36 @@ get_Renviron <- function(what = c("build", "check"), set, package = .packageName
     return(value)
   }
 
+  root_paths <- c(
+    file.path("~", ".R"),
+    file.path(system.file(package = package))
+  )
+
+  paths <- file.path(root_paths, set)
+  keep <- file_test("-d", paths)
+  if (!any(keep)) {
+    msg <- sprintf("None of the Renviron folders exists: %s",
+                   paste(sQuote(paths), collapse = ", "))
+    logf("- %s", msg)
+    if (must_exist) error(msg)
+    return(NULL)
+  }
+  paths <- paths[keep]
+  
   filename <- sprintf("%s.Renviron", what)
+  pathnames <- file.path(paths, filename)
+  keep <- file_test("-f", pathnames)
+  if (!any(keep)) {
+    msg <- sprintf("Failed to locate a %s file: %s", sQuote(filename),
+                   paste(sQuote(paths), collapse = ", "))
+    logf("- %s", msg)
+    if (must_exist) error(msg)
+    return(NULL)
+  }
+  pathnames <- pathnames[keep]
 
-  pathname <- file.path(path, filename)
-  logf("- Look for R_CHECK_ENVIRON file: %s", sQuote(pathname))
-  if (!file_test("-f", pathname)) return(NULL)
-
+  ## In case there is more than one match, use the first
+  pathname <- pathnames[1]
   logf("- R_CHECK_ENVIRON file found: %s", sQuote(pathname))
 
   pathname
