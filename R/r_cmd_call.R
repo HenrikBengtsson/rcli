@@ -39,11 +39,16 @@
 #'
 #' @export
 r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
+  if (unload) on.exit(unload())
+  
+  ## Prevent this function from being called twice in the same session
+  if (nzchar(Sys.getenv("R_RCLI_CALLED"))) return(invisible(FALSE))
+  Sys.setenv(R_RCLI_CALLED = "TRUE")
+  
   R_CMD <- Sys.getenv("R_CMD")
 
   ## Nothing to do?
   if (!nzchar(R_CMD) || length(args) == 0L || length(extras) == 0L) {
-    if (unload) unload()
     return(invisible(FALSE))
   }
 
@@ -154,10 +159,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   logf(" - custom: %s", custom)
 
   ## No custom R CMD <command> options?
-  if (!custom) {
-    if (unload) unload(debug = debug)
-    return(invisible(FALSE))
-  }
+  if (!custom) return(invisible(FALSE))
 
 
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -239,10 +241,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
 
   ## If possible, do an early return and let the active R CMD <command>
   ## take over from here
-  if (is.null(stdin)) {
-    if (unload) unload(debug = debug)
-    return(invisible(TRUE))
-  }
+  if (is.null(stdin)) return(invisible(TRUE))
 
 
   ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -280,11 +279,6 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
     logf("Results: %s", paste(sQuote(res), collapse = ", "))
   })
   
-
-  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  ## Cleanup
-  ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  if (unload) unload(debug = debug)
 
   invisible(TRUE)
 }
