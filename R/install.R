@@ -109,17 +109,17 @@ is_installed <- function(file = file.path("~", ".Rprofile")) {
 #' @importFrom utils file_test
 #' @export
 validate <- function() {
-  R_bin <- file.path(R.home("bin"), "R")
+  R_bin <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") "R.exe" else "R")
   stop_if_not(file_test("-x", R_bin))
-  args <- c("CMD", "check", "--as=rcli-test")
+  args <- c("CMD", "check", "--as=rcli", "--hello")
   output <- system2(R_bin, args = args, stdout = TRUE)
   status <- attr(output, "status")
   if (!is.null(status) && status != 0L) {
-    stop("rcli::r_cmd_call() is not properly installed in .Rprofile. 'R CMD check --as=rcli-test' terminated with a non-zero exit code")
+    stop("rcli::r_cmd_call() is not properly installed in .Rprofile. 'R CMD check --as=rcli' terminated with a non-zero exit code")
   }
-  expect <- "* using --as=rcli-test"
+  expect <- "Hello world!"
   if (!any(grepl(expect, output, fixed = TRUE))) {
-    stop(sprintf("rcli::r_cmd_call() is not properly installed in .Rprofile. 'R CMD check --as=rcli-test' did not output the string %s", sQuote(expect)))
+    stop(sprintf("rcli::r_cmd_call() is not properly installed in .Rprofile. 'R CMD check --as=rcli' did not output the string %s", sQuote(expect)))
   }
   message("Validated that 'R CMD check --as=<style>' works")
   invisible(TRUE)
