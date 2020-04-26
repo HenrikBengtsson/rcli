@@ -40,7 +40,7 @@ check_bioconductor_default <- function(args, stdin) {
   if (version <= "3.10") {
     cat("* using regular 'R CMD check' since Bioconductor (<= 3.10) does not use customized testing\n")
   } else {
-    pathname <- find_Renviron("check", set = set_bioconductor(version))
+    pathname <- find_custom_Renviron("check", set = set_bioconductor(version))
     if (is.null(pathname)) {
       error("Failed to located Renviron file for Bioconductor version %s: %s", version, sQuote(pathname))
     }
@@ -57,7 +57,7 @@ check_bioconductor_default <- function(args, stdin) {
 check_bioconductor_BiocCheck <- function(args, stdin) {
   if (isTRUE(args$help)) return(check_bioconductor_help())
 
-  pathname <- find_Renviron("check", set = set_bioconductor())
+  pathname <- find_custom_Renviron("check", set = set_bioconductor())
   if (!is.null(pathname)) {
     logf("- Setting environment variable R_CHECK_ENVIRON=%s", dQuote(pathname))
     Sys.setenv(R_CHECK_ENVIRON = pathname)
