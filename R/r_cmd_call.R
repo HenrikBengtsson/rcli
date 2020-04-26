@@ -36,7 +36,7 @@
 #' @keywords internal
 #'
 #' @export
-r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
+r_cmd_call <- function(extras = c("debug", "as", "config", "renviron", "eval"), args = commandArgs(trailingOnly=TRUE), unload = TRUE, debug = NA, envir = parent.frame(), dryrun = FALSE) {
   if (unload) on.exit(unload())
   
   ## Prevent this function from being called twice in the same session
@@ -97,7 +97,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
   
     
     ## Key-value options
-    for (name in c("as", "config", "renviron")) {
+    for (name in c("as", "config", "renviron", "eval")) {
       if (name %in% extras) {
         pattern <- sprintf("^--%s=(.*)$", name)
         pos <- grep(pattern, args)
@@ -112,6 +112,14 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
           ready <- FALSE
 
           if (!silent) cat(sprintf("* using --%s=%s\n", name, value))
+          
+          if (name == "eval") {
+            tryCatch(expr <- parse(text = value), error = function(ex) {
+              error("Syntax error in --eval=%s: %s",
+                    dQuote(value), conditionMessage(ex))
+            })
+            eval(expr, envir = envir)
+          }
 
           ## Special: Process configuration file as soon as possible
           if (name == "config") {
@@ -130,6 +138,7 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron"), args = c
               logf("- Setting environment variables per configuration file %s: %s",
                    sQuote(pathname),
                    paste(sQuote(names(config$env)), collapse = ", "))
+                                 
               do.call(Sys.setenv, args = config$env)
             }
           
