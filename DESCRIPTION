@@ -1,14 +1,14 @@
 Package: rcli
-Title: R Command-Line Interface Booster
+Title: R Command-Line Interface Extras
 Imports:
     methods,
     utils
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person(given = "Henrik", family = "Bengtsson",
            role = c("aut", "cre", "cph"),
            email = "henrikb@braju.com")
-Description: By calling the API of this package during the R startup, in an Rprofile file, one can add extra features to the R command-line interface (CLI).  For example, rcli::r_cmd_call() will add CLI option '--as=<name>' to 'R CMD build' and 'R CMD check'.
+Description: Boosts 'R CMD check' with extra options. For example, 'R CMD check --config=check.dcf pkg_1.0.tar.gz' checks the package tarball with additional command-line options and environment variables as given by the 'check.dcf' file.  Another example is 'R CMD check --as=bioconductor pkg_1.0.tar.gz', which checks the package according to Bioconductor settings.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
