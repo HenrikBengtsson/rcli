@@ -19,6 +19,10 @@ error <- function(fmtstr, ..., call. = TRUE) {
   msg <- sprintf(fmtstr, ...)
   msg <- sprintf("ERROR: %s", msg)
   message(msg)
+  
+  ## empty stdin() to prevent further processsing
+  readLines(stdin())
+  
   stop(msg, call. = call.)
 }
 

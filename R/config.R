@@ -1,6 +1,8 @@
-
+#' @importFrom utils file_test
 parse_config_dcf <- function(pathname) {
-  error_if_not(file_test("-f", pathname))
+  if (!file_test("-f", pathname)) {
+    error("No such configuration file: %s", sQuote(pathname))
+  }
   config <- suppressWarnings(read.dcf(pathname, all = TRUE))
   config <- as.list(config)
   config <- lapply(config, FUN = function(x) {
