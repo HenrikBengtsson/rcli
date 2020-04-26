@@ -1,8 +1,10 @@
 # Package: rcli
 
-## Version: 0.1.0-9000 [2019-04-25]
+## Version: 0.1.0-9000 [2019-04-26]
 
- * ...
+### New Features
+
+ * Add `R CMD check --as=cran --offline ...`.
  
 
 ## Version: 0.1.0 [2019-04-25]

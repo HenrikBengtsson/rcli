@@ -26,6 +26,24 @@ $
 
 ## Usage
 
+### For CRAN developers
+
+When submitting to CRAN, you should validate your package with `R CMD check --as-cran`.  For the completeness of this package, an alias for that is:
+
+```sh
+$ R CMD check --as=cran pkg_1.0.tar.gz
+```
+
+If you are offline, on a slow or an unstable internet connection, or for other reasons do not want to send out online queries to the CRAN servers, you can run these checks in an "offline" mode by:
+
+```sh
+$ R CMD check --as=cran --offline pkg_1.0.tar.gz
+```
+
+This will _as far as possible_ try to skip the tests that require data to be pulled down from the CRAN servers.  
+
+
+
 ### For Bioconductor developers
 
 To check a package for the currently installed version of Bioconductor, use:

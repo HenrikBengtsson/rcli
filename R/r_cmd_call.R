@@ -134,13 +134,8 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron", "eval"), 
             logf("- Assertions in configuration file %s fullfilled", sQuote(pathname))
           
             ## Set environment variables
-            if (length(config$env) > 0L) {
-              logf("- Setting environment variables per configuration file %s: %s",
-                   sQuote(pathname),
-                   paste(sQuote(names(config$env)), collapse = ", "))
-                                 
-              do.call(Sys.setenv, args = config$env)
-            }
+            logf("- Setting environment variables per configuration file %s: %s", sQuote(pathname), paste(sQuote(names(config$env)), collapse = ", "))
+            use_Renviron("check", envs = unlist(config$env))
           
             ## Inject CLI options (giving priority to additional options)
             logf(" - args: %s", paste(sQuote(args), collapse = ", "))
@@ -269,6 +264,10 @@ r_cmd_call <- function(extras = c("debug", "as", "config", "renviron", "eval"), 
     if (!file_test("-f", pathname)) {
       error("No such file: %s", sQuote(pathname))
     }
+    ## Import check env vars here too, just in case (not sure if it is needed)
+    readRenviron(pathname)
+    ## Make sure 'R_CHECK_ENVIRON' was not overwritten
+    Sys.setenv(R_CHECK_ENVIRON = pathname)
   }
   
   local({
