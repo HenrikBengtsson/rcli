@@ -3,7 +3,7 @@ Title: R Command-Line Interface Extras
 Imports:
     methods,
     utils
-Version: 0.1.0
+Version: 0.1.0-9000
 Authors@R: 
     person(given = "Henrik", family = "Bengtsson",
            role = c("aut", "cre", "cph"),
