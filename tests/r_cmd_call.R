@@ -11,7 +11,7 @@ bfr0 <- utils::capture.output({
 })
 cat(bfr0, sep = "\n")
 
-args <- c("--as=rcli-test", "--help")
+args <- c("--as=rcli", "--help")
 bfr <- utils::capture.output({
   res <- r_cmd_call(args = args, unload = FALSE, debug = TRUE)
 })
