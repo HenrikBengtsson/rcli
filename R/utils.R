@@ -117,7 +117,7 @@ file_info <- function(f, type = "txt") {
     } else {
       vars <- ""
     }
-    sprintf("%d lines; %d bytes setting %d environment variables%s",
+    sprintf("%d lines; %d bytes setting %d environment variables: %s",
             nlines(f), file_size(f), nvars, vars)
   } else if (type == "r") {
     sprintf("%d code lines; %d bytes", nlines(f), file_size(f))
