@@ -91,6 +91,23 @@ env:
 ```
 
 
+## Known limitations
+
+The above `R CMD` extensions work because **rcli** injects itself, during the R startup process, in the first step of the `R` -> `R CMD` -> `R CMD {command}` pipeline.  Because of this, none of the above will work if we call it as:
+
+```sh
+$ R --vanilla CMD check ...
+$ R --no-init-file CMD check ...
+```
+
+If attempted, we will get something like:
+
+```sh
+$ R --vanilla CMD check --as=rcli --hello
+Warning: unknown option ‘--as=rcli’
+Warning: unknown option ‘--hello’
+Error: no packages were specified
+```
 
 [BiocCheck]: https://bioconductor.org/packages/BiocCheck/
 [rcli]: https://github.com/HenrikBengtsson/rcli

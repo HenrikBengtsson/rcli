@@ -5,7 +5,7 @@
 ### New Features
 
  * Add `R CMD check --as=cran --offline ...`.
- 
+
 
 ## Version: 0.1.0 [2019-04-25]
 
